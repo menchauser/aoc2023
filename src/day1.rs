@@ -72,7 +72,7 @@ fn extract_num_complex(digit_values: HashMap<&str, u32>) -> Box<dyn Fn(&str) -> 
             .min_by_key(|(_, idx, _)| idx.unwrap_or(usize::MAX));
         let max_digit = digit_indices
             .iter()
-            .filter(|(_, idx, _)| idx.is_some())
+            .filter(|(_, _, idx)| idx.is_some())
             .max_by_key(|(_, _, idx)| idx.unwrap_or(usize::MIN));
         let first_value = digit_values[min_digit.unwrap().0];
         let last_value = digit_values[max_digit.unwrap().0];
