@@ -60,11 +60,7 @@ fn extract_num_complex(digit_values: HashMap<&str, u32>) -> Box<dyn Fn(&str) -> 
         // then we take the value of first string and last one in each str
         let digit_indices: Vec<(&str, Option<usize>, Option<usize>)> = digit_values
             .iter()
-            .map(|(value, _)| {
-                let first_idx = line.find(value);
-                let last_idx = line.rfind(value);
-                (*value, first_idx, last_idx)
-            })
+            .map(|(dig_str, _)| (*dig_str, line.find(dig_str), line.rfind(dig_str)))
             .collect();
         let min_digit = digit_indices
             .iter()
