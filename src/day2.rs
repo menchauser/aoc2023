@@ -71,7 +71,7 @@ fn parse_game(line: String) -> Game {
     let id: u32 = line[5..id_end_idx].parse().unwrap();
     // now we can split remaining line by ';' and parse each hand separately
     let hands_str = &line[id_end_idx + 1..line.len()];
-    let hands = hands_str.split(';').map(|s| parse_hand(s)).collect();
+    let hands = hands_str.split(';').map(parse_hand).collect();
     Game { id, sets: hands }
 }
 
