@@ -6,11 +6,11 @@ use std::{fs::File, path::Path};
 pub fn part1(input_path: &Path) {
     let input = parse_input(input_path).unwrap();
     // now we search for games which has no more than 12r, 13g, 14b in each hand
-    let good_games: Vec<&Game> = input
+    let result: u32 = input
         .iter()
         .filter(|g| g.sets.iter().all(|h| h.r <= 12 && h.g <= 13 && h.b <= 14))
-        .collect();
-    let result: u32 = good_games.iter().map(|g| g.id).sum();
+        .map(|g| g.id)
+        .sum();
     println!("Result: {}", result);
 }
 
@@ -47,7 +47,6 @@ struct Game {
 }
 
 fn parse_hand(hand_str: &str) -> CubeSet {
-    // eprintln!("Hand: '{}'", hand_str);
     let hand_str = hand_str.trim();
     let mut r: u32 = 0;
     let mut g: u32 = 0;
@@ -72,7 +71,6 @@ fn parse_game(line: String) -> Game {
     let id: u32 = line[5..id_end_idx].parse().unwrap();
     // now we can split remaining line by ';' and parse each hand separately
     let hands_str = &line[id_end_idx + 1..line.len()];
-    // eprintln!("Hands: '{}'", hands_str);
     let hands = hands_str.split(';').map(|s| parse_hand(s)).collect();
     Game { id, sets: hands }
 }
