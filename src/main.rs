@@ -9,13 +9,22 @@ struct DayParts {
 }
 
 fn main() {
-    let days: HashMap<String, DayParts> = HashMap::from([((
-        "day1".to_string(),
-        DayParts {
-            part1: day1::part1,
-            part2: day1::part2,
-        },
-    ))]);
+    let days: HashMap<String, DayParts> = HashMap::from([
+        (
+            "day1".to_string(),
+            DayParts {
+                part1: day1::part1,
+                part2: day1::part2,
+            },
+        ),
+        (
+            "day2".to_string(),
+            DayParts {
+                part1: day2::part1,
+                part2: day2::part2,
+            },
+        ),
+    ]);
 
     // Program arguments:
     //  rust-aoc <day> <part> <input-file>

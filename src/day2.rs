@@ -1,7 +1,76 @@
-pub fn part1(input_path: &std::path::Path) {
+use std::io;
+use std::io::BufRead;
+use std::{fs::File, path::Path};
+
+pub fn part1(input_path: &Path) {
+    let input = parse_input(input_path).unwrap();
+    // now we search for games which has no more than 12r, 13g, 14b in each hand
+    let good_games: Vec<&Game> = input
+        .iter()
+        .filter(|g| g.hands.iter().all(|h| h.r <= 12 && h.g <= 13 && h.b <= 14))
+        .collect();
+    println!("Games:");
+    for game in &input {
+        println!("{:?}", game);
+    }
+    println!("Good games:");
+    for game in &good_games {
+        println!("{:?}", game);
+    }
+    let result: u32 = good_games.iter().map(|g| g.id).sum();
+    println!("Result: {}", result);
+}
+
+pub fn part2(_input_path: &Path) {
     todo!()
 }
 
-pub fn part2(input_path: &std::path::Path) {
-    todo!()
+#[derive(Debug)]
+struct Hand {
+    r: u32,
+    g: u32,
+    b: u32,
+}
+
+#[derive(Debug)]
+struct Game {
+    id: u32,
+    hands: Vec<Hand>,
+}
+
+fn parse_hand(hand_str: &str) -> Hand {
+    // eprintln!("Hand: '{}'", hand_str);
+    let hand_str = hand_str.trim();
+    let mut r: u32 = 0;
+    let mut g: u32 = 0;
+    let mut b: u32 = 0;
+    for elem in hand_str.split(',') {
+        let elem = elem.trim();
+        let num: u32 = elem[0..(elem.find(" ").unwrap())].parse().unwrap();
+        if elem.ends_with("red") {
+            r += num;
+        } else if elem.ends_with("green") {
+            g += num;
+        } else if elem.ends_with("blue") {
+            b += num;
+        }
+    }
+    return Hand { r, g, b };
+}
+
+fn parse_game(line: String) -> Game {
+    // read game ID: parse a number between "Game " and ":"
+    let id_end_idx = line.find(":").unwrap();
+    let id: u32 = line[5..id_end_idx].parse().unwrap();
+    // now we can split remaining line by ';' and parse each hand separately
+    let hands_str = &line[id_end_idx + 1..line.len()];
+    // eprintln!("Hands: '{}'", hands_str);
+    let hands = hands_str.split(';').map(|s| parse_hand(s)).collect();
+    Game { id, hands }
+}
+
+fn parse_input(input_path: &Path) -> io::Result<Vec<Game>> {
+    let file = File::open(input_path)?;
+    let buf_reader = io::BufReader::new(file);
+    return buf_reader.lines().map(|res| res.map(parse_game)).collect();
 }
