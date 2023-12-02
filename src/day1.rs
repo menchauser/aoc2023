@@ -1,45 +1,40 @@
-use crate::day::Day;
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::{self, BufRead};
 use std::path::Path;
 
-pub struct Day1 {}
+pub fn part1(input_path: &Path) {
+    let input = parse_input(input_path, extract_num_simple).unwrap();
+    let result: u32 = input.iter().sum();
+    println!("Sum: {}", result);
+}
 
-impl Day for Day1 {
-    fn part1(&self, input_path: &Path) {
-        let input = parse_input(input_path, extract_num_simple).unwrap();
-        let result: u32 = input.iter().sum();
-        println!("Sum: {}", result);
-    }
-
-    fn part2(&self, input_path: &Path) {
-        let digit_values: HashMap<&str, u32> = HashMap::from([
-            ("0", 0),
-            ("zero", 0),
-            ("1", 1),
-            ("one", 1),
-            ("2", 2),
-            ("two", 2),
-            ("3", 3),
-            ("three", 3),
-            ("4", 4),
-            ("four", 4),
-            ("5", 5),
-            ("five", 5),
-            ("6", 6),
-            ("six", 6),
-            ("7", 7),
-            ("seven", 7),
-            ("8", 8),
-            ("eight", 8),
-            ("9", 9),
-            ("nine", 9),
-        ]);
-        let input = parse_input(input_path, extract_num_complex(digit_values)).unwrap();
-        let result: u32 = input.iter().sum();
-        println!("Sum: {}", result);
-    }
+pub fn part2(input_path: &Path) {
+    let digit_values: HashMap<&str, u32> = HashMap::from([
+        ("0", 0),
+        ("zero", 0),
+        ("1", 1),
+        ("one", 1),
+        ("2", 2),
+        ("two", 2),
+        ("3", 3),
+        ("three", 3),
+        ("4", 4),
+        ("four", 4),
+        ("5", 5),
+        ("five", 5),
+        ("6", 6),
+        ("six", 6),
+        ("7", 7),
+        ("seven", 7),
+        ("8", 8),
+        ("eight", 8),
+        ("9", 9),
+        ("nine", 9),
+    ]);
+    let input = parse_input(input_path, extract_num_complex(digit_values)).unwrap();
+    let result: u32 = input.iter().sum();
+    println!("Sum: {}", result);
 }
 
 type Part1Input = Vec<u32>;

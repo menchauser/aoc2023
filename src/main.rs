@@ -2,10 +2,21 @@ use std::{collections::HashMap, env, path::Path, process::exit};
 
 mod day;
 mod day1;
+mod day2;
+
+struct DayParts {
+    part1: fn(&Path) -> (),
+    part2: fn(&Path) -> (),
+}
 
 fn main() {
-    let mut days: HashMap<String, Box<dyn day::Day>> = HashMap::new();
-    days.insert("day1".into(), Box::new(day1::Day1 {}));
+    let days: HashMap<String, DayParts> = HashMap::from([((
+        "day1".to_string(),
+        DayParts {
+            part1: day1::part1,
+            part2: day1::part2,
+        },
+    ))]);
 
     // Program arguments:
     //  rust-aoc <day> <part> <input-file>
@@ -16,7 +27,7 @@ fn main() {
         exit(1);
     }
 
-    let day = days
+    let DayParts { part1, part2 } = days
         .get(&args[1])
         .unwrap_or_else(|| panic!("I don't know the day {}", &args[1]));
     let part: u8 = args[2]
@@ -24,8 +35,8 @@ fn main() {
         .unwrap_or_else(|_| panic!("Could not parse part: it should be 1 or 2"));
     let path = Path::new(&args[3]);
     match part {
-        1 => day.part1(path),
-        2 => day.part2(path),
+        1 => part1(path),
+        2 => part2(path),
         _ => {
             println!("Support only 1 and 2 parts");
             exit(1)
