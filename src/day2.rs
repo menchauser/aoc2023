@@ -1,3 +1,4 @@
+use std::cmp::max;
 use std::io;
 use std::io::BufRead;
 use std::{fs::File, path::Path};
@@ -7,26 +8,33 @@ pub fn part1(input_path: &Path) {
     // now we search for games which has no more than 12r, 13g, 14b in each hand
     let good_games: Vec<&Game> = input
         .iter()
-        .filter(|g| g.hands.iter().all(|h| h.r <= 12 && h.g <= 13 && h.b <= 14))
+        .filter(|g| g.sets.iter().all(|h| h.r <= 12 && h.g <= 13 && h.b <= 14))
         .collect();
-    println!("Games:");
-    for game in &input {
-        println!("{:?}", game);
-    }
-    println!("Good games:");
-    for game in &good_games {
-        println!("{:?}", game);
-    }
     let result: u32 = good_games.iter().map(|g| g.id).sum();
     println!("Result: {}", result);
 }
 
-pub fn part2(_input_path: &Path) {
-    todo!()
+pub fn part2(input_path: &Path) {
+    let input = parse_input(input_path).unwrap();
+    // first we calculate the minimal cube set for each game
+    let result: u32 = input
+        .iter()
+        .map(|g| {
+            g.sets
+                .iter()
+                .fold(CubeSet { r: 0, g: 0, b: 0 }, |acc, set| CubeSet {
+                    r: max(acc.r, set.r),
+                    g: max(acc.g, set.g),
+                    b: max(acc.b, set.b),
+                })
+        })
+        .map(|set| set.r * set.g * set.b)
+        .sum();
+    println!("Result: {}", result);
 }
 
 #[derive(Debug)]
-struct Hand {
+struct CubeSet {
     r: u32,
     g: u32,
     b: u32,
@@ -35,10 +43,10 @@ struct Hand {
 #[derive(Debug)]
 struct Game {
     id: u32,
-    hands: Vec<Hand>,
+    sets: Vec<CubeSet>,
 }
 
-fn parse_hand(hand_str: &str) -> Hand {
+fn parse_hand(hand_str: &str) -> CubeSet {
     // eprintln!("Hand: '{}'", hand_str);
     let hand_str = hand_str.trim();
     let mut r: u32 = 0;
@@ -55,7 +63,7 @@ fn parse_hand(hand_str: &str) -> Hand {
             b += num;
         }
     }
-    return Hand { r, g, b };
+    return CubeSet { r, g, b };
 }
 
 fn parse_game(line: String) -> Game {
@@ -66,7 +74,7 @@ fn parse_game(line: String) -> Game {
     let hands_str = &line[id_end_idx + 1..line.len()];
     // eprintln!("Hands: '{}'", hands_str);
     let hands = hands_str.split(';').map(|s| parse_hand(s)).collect();
-    Game { id, hands }
+    Game { id, sets: hands }
 }
 
 fn parse_input(input_path: &Path) -> io::Result<Vec<Game>> {
