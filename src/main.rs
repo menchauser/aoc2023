@@ -1,6 +1,5 @@
 use std::{collections::HashMap, env, path::Path, process::exit};
 
-mod day;
 mod day1;
 mod day2;
 
