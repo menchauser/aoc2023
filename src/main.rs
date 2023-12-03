@@ -2,6 +2,7 @@ use std::{collections::HashMap, env, path::Path, process::exit};
 
 mod day1;
 mod day2;
+mod day3;
 
 struct DayParts {
     part1: fn(&Path) -> (),
@@ -24,6 +25,13 @@ fn main() {
                 part2: day2::part2,
             },
         ),
+        (
+            "day3".to_string(),
+            DayParts {
+                part1: day3::part1,
+                part2: day3::part2,
+            },
+        ),
     ]);
 
     // Program arguments:
@@ -38,9 +46,11 @@ fn main() {
     let DayParts { part1, part2 } = days
         .get(&args[1])
         .unwrap_or_else(|| panic!("I don't know the day {}", &args[1]));
-    let part: u8 = args[2]
-        .parse()
-        .unwrap_or_else(|_| panic!("Could not parse part: it should be 1 or 2"));
+    let part: u8 = if args[2].starts_with("part") {
+        &args[2][4..args[2].len()]
+    } else {
+        args[2].as_str()
+    }.parse().unwrap_or_else(|_| panic!("Could not parse part: it should be 1 or 2"));
     let path = Path::new(&args[3]);
     match part {
         1 => part1(path),
