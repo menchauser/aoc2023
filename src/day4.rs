@@ -28,14 +28,14 @@ pub fn part2(input_path: &Path) {
     for card in &cards {
         eprintln!("{:?}", card);
     }
-    // for each card we first count matching numbers (MC) and update next MC cards 
+    // for each card we first count matching numbers (MC) and update next MC cards
     let mut copy_cards: Vec<_> = cards.iter().map(CopyCard::new).collect();
     for i in 0..copy_cards.len() {
         let card_score = copy_cards[i].score();
         let card_copies = copy_cards[i].copies;
         // add copies for next `score` cards
-        for next_card in copy_cards[i + 1..i+card_score+1].iter_mut() {
-            next_card.copies += card_copies;            
+        for next_card in copy_cards[i + 1..i + card_score + 1].iter_mut() {
+            next_card.copies += card_copies;
         }
     }
     let result: u32 = copy_cards.iter().map(|c| c.copies).sum();
@@ -54,11 +54,15 @@ struct CopyCard<'a> {
     copies: u32,
 }
 
-impl <'a> CopyCard<'a> {
+impl<'a> CopyCard<'a> {
     fn new(card: &'a Card) -> CopyCard<'a> {
-        CopyCard { winning_nums: &card.winning_nums, present_nums: &card.present_nums, copies: 1 }
+        CopyCard {
+            winning_nums: &card.winning_nums,
+            present_nums: &card.present_nums,
+            copies: 1,
+        }
     }
-    
+
     fn score(&self) -> usize {
         let win_c: HashSet<u8> = HashSet::from_iter(self.winning_nums.iter().cloned());
         let pres_c: HashSet<u8> = HashSet::from_iter(self.present_nums.iter().cloned());
@@ -81,8 +85,8 @@ fn parse_card(s: String) -> Card {
         .map(|ns| ns.parse::<u8>().unwrap())
         .collect();
     Card {
-        winning_nums: winning_nums,
-        present_nums: present_nums,
+        winning_nums,
+        present_nums,
     }
 }
 

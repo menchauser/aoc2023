@@ -77,11 +77,12 @@ pub fn part2(input_path: &Path) {
                     if pos.row >= start_row
                         && pos.row < end_row
                         // does number begin in window
-                        && (pos.start_col >= start_col && pos.start_col < end_col 
+                        && (pos.start_col >= start_col && pos.start_col < end_col
                             // or ends in it
-                            || pos.end_col - 1 >= start_col && pos.end_col - 1 < end_col) {
-                                eprintln!("Number {:?} overlaps with this gear", pos);
-                                gear_nums.push(parse_number(&input, pos));
+                            || pos.end_col - 1 >= start_col && pos.end_col - 1 < end_col)
+                    {
+                        eprintln!("Number {:?} overlaps with this gear", pos);
+                        gear_nums.push(parse_number(&input, pos));
                     }
                 }
                 if gear_nums.len() == 2 {
