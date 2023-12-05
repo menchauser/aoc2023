@@ -1,3 +1,4 @@
+use std::cmp::Ordering;
 use std::fmt::Display;
 use std::fs::File;
 use std::io::{self, BufRead};
@@ -46,9 +47,16 @@ struct RangeRule {
     range_len: u64,
 }
 
+
 struct Almanac {
     seeds: Vec<u64>,
     rule_book: Vec<Vec<RangeRule>>,
+}
+
+impl RangeRule {
+    fn contains(&self, key: u64) -> bool {
+        return self.src_key <= key && key < self.src_key + self.range_len;
+    }
 }
 
 impl Display for RangeRule {
@@ -71,12 +79,29 @@ impl Display for Almanac {
     }
 }
 
-fn map_key(key: u64, rule_map: &Vec<RangeRule>) -> u64 {
+// we expect rule_map to be sorted, so we can implement binary search over it to be a bit faster
+fn map_key_sorted(key: u64, rule_map: &Vec<RangeRule>) -> u64 {
     // we go through rules trying to find it key is in between [src..src+len]
     // if not, we just return as it is
+    // we first binary search for rule which captures key
+    let found = rule_map.binary_search_by(|rr| if rr.contains(key) {
+        Ordering::Equal
+    } else {
+        return rr.src_key.cmp(&key);
+    });
+    match found {
+        Ok(idx) => {
+            let rr = &rule_map[idx];
+            rr.dst_key + key - rr.src_key
+        },
+        Err(_) => key,
+    }
+}
+
+fn map_key(key: u64, rule_map: &Vec<RangeRule>) -> u64 {
     rule_map
         .iter()
-        .find(|r| (r.src_key..(r.src_key + r.range_len)).contains(&key))
+        .find(|rr| rr.contains(key))
         .map(|rr| {
             // eprintln!("key: {}, map rule: {}", key, rr);
             // eprint!("{} + {} - {} = ", rr.dst_key, key, rr.src_key);
@@ -88,7 +113,7 @@ fn map_key(key: u64, rule_map: &Vec<RangeRule>) -> u64 {
 fn map_to_location(seed: u64, rule_book: &Vec<Vec<RangeRule>>) -> u64 {
     rule_book.iter().fold(seed, |key, rules| {
         // eprintln!("Check key {}", key);
-        let result = map_key(key, rules);
+        let result = map_key_sorted(key, rules);
         // eprintln!("Key mapped to next key: {}", result);
         result
     })
@@ -96,7 +121,7 @@ fn map_to_location(seed: u64, rule_book: &Vec<Vec<RangeRule>>) -> u64 {
 
 fn parse_rules(lines: &[String]) -> Vec<RangeRule> {
     // skip first line with header
-    lines[1..]
+    let mut result: Vec<_> = lines[1..]
         .iter()
         .map(|l| l.split_whitespace().map(|s| s.parse::<u64>().unwrap()))
         .map(|mut nums| {
@@ -109,7 +134,9 @@ fn parse_rules(lines: &[String]) -> Vec<RangeRule> {
                 range_len: len,
             }
         })
-        .collect()
+        .collect();
+    result.sort_by_key(|rr| rr.src_key);
+    result
 }
 
 fn load_input(input_path: &Path) -> io::Result<Almanac> {
