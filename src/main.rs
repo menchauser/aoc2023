@@ -5,6 +5,7 @@ mod day2;
 mod day3;
 mod day4;
 mod day5;
+mod day6;
 
 type PartFn = fn(&Path) -> ();
 
@@ -14,7 +15,11 @@ fn main() {
         ("day2", vec![day2::part1, day2::part2]),
         ("day3", vec![day3::part1, day3::part2]),
         ("day4", vec![day4::part1, day4::part2]),
-        ("day5", vec![day5::part1, day5::part2, day5::part3]),
+        (
+            "day5",
+            vec![day5::part1, day5::part2, day5::part3, day5::part4],
+        ),
+        ("day6", vec![day6::part1]),
     ]);
 
     // Program arguments:

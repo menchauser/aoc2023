@@ -4,6 +4,7 @@ use std::cmp::Ordering;
 use std::fmt::Display;
 use std::fs::File;
 use std::io::{self, BufRead};
+use std::ops::Range;
 use std::path::Path;
 use std::time::Instant;
 
@@ -82,6 +83,91 @@ pub fn part3(input_path: &Path) {
         .min();
 
     println!("Result: {}", result.unwrap())
+}
+
+fn apply_rules(seed_ranges: &Vec<Range<u64>>, rule_map: &Vec<RangeRule>) -> Vec<Range<u64>> {
+    // for each range
+    //  for each rule
+    //    if range intersects with rule: extract intersected part and put it in the result
+    // remember the part which was not intersected: it should be added to result as it is
+    // how do we remember part of range which is not affected?
+    // rules do not overlap so we can "nibble" from original range
+    let mut result = Vec::new();
+    for seed_range in seed_ranges {
+        let mut sr = seed_range.clone();
+        for rule in rule_map {
+            if rule.contains(sr.start) || rule.contains(sr.end - 1) {
+                eprintln!("range {:?} intersects with rule {}", sr, &rule);
+                // now split range
+                // there are three possible cases:
+                // - sr is completely covered by rule
+                // - rule bites left part of sr (sr.start is covered by rule)
+                // - rule bites right part of sr (sr.end is covered by rule)
+                if rule.contains(sr.start) {
+                    if rule.contains(sr.end) {
+                        // rule completely matches, early exit
+                        todo!()
+                    } else {
+                        // left bite, continue
+                        // we extract range part and immediately shift it according to rule
+                        let extracted_sr = Range {
+                            start: sr.start - rule.src_key + rule.dst_key,
+                            end: rule.src_key + rule.range_len,
+                        };
+                        result.push(extracted_sr);
+                        // remaining range
+                        sr = Range {
+                            start: rule.src_key + rule.range_len,
+                            end: sr.end,
+                        };
+                    }
+                } else {
+                    // right bite, continue
+                    // we extract range part and immediately shift it according to rule
+                    let extracted_sr = Range {
+                        start: rule.dst_key,
+                        end: sr.end - rule.src_key + rule.dst_key
+                    };
+                    result.push(extracted_sr);
+                    // remaining range
+                    sr = Range {
+                        start: sr.start,
+                        end: rule.src_key,
+                    };
+                }
+            } else if sr.start <= rule.src_key && sr.end >= rule.src_key + rule.range_len {
+                // special case: seed range contains rule within itself 
+                todo!()
+            }
+        }
+        if !sr.is_empty() {
+            result.push(sr);
+        }
+    }
+    result = Vec::clone(seed_ranges);
+    result.sort_by_key(|r| r.start);
+    result
+}
+
+// Part 2: non-bruteforce solution
+pub fn part4(input_path: &Path) {
+    // the idea is that we go through rule maps keeping only ranges in memory (not seeds)
+    // for each rule map
+    //   new ranges = apply rules to ranges
+    //   ranges = merge new ranges
+    // in the end we take minimal value from minimal range
+    let almanac = load_input(input_path).unwrap();
+    println!("Loaded almanac: {}", &almanac);
+    let seed_ranges: Vec<_> = almanac
+        .seeds
+        .chunks(2)
+        .map(|c| c[0]..(c[0] + c[1]))
+        .collect();
+    println!("Seed ranges: {:?}", &seed_ranges);
+    println!("First step: apply first rule map to seed ranges");
+    let next = apply_rules(&seed_ranges, &almanac.rule_book[0]);
+    println!("Ranges after apply:");
+    println!("{:?}", next);
 }
 
 struct RangeRule {
