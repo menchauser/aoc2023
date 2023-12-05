@@ -4,6 +4,7 @@ mod day1;
 mod day2;
 mod day3;
 mod day4;
+mod day5;
 
 struct DayParts {
     part1: fn(&Path) -> (),
@@ -38,6 +39,13 @@ fn main() {
             DayParts {
                 part1: day4::part1,
                 part2: day4::part2,
+            },
+        ),
+        (
+            "day5".to_string(),
+            DayParts {
+                part1: day5::part1,
+                part2: day5::part2,
             },
         ),
     ]);
