@@ -4,6 +4,8 @@ use std::fs::File;
 use std::io::{self, BufRead};
 use std::path::Path;
 use std::time::Instant;
+use rayon::iter::{ParallelBridge, IntoParallelRefIterator};
+use rayon::prelude::*;
 
 pub fn part1(input_path: &Path) {
     let almanac = load_input(input_path).unwrap();
@@ -18,6 +20,35 @@ pub fn part1(input_path: &Path) {
 }
 
 pub fn part2(input_path: &Path) {
+    let start = Instant::now();
+    let almanac = load_input(input_path).unwrap();
+    eprintln!("Loaded almanac:");
+    eprintln!("{}", &almanac);
+    let chunks: Vec<_> = almanac
+        .seeds
+        .chunks(2)
+        .map(|c| c[0]..(c[0] + c[1]))
+        .enumerate()
+        .collect();
+    let result = chunks
+        .par_iter()
+        .map(|(i, seed_range)| {
+            eprintln!("Start seed range {} of {}: start={}, length={}", 
+                      i, almanac.seeds.len() / 2, &seed_range.start, &seed_range.end - &seed_range.start);
+            eprintln!("Total running time before {}: {:?}", i, start.elapsed());
+            let result = seed_range.clone()
+                .map(|seed| map_to_location(seed, &almanac.rule_book))
+                .min()
+                .unwrap();
+            eprintln!("Total running time after {}: {:?}", i, start.elapsed());
+            result
+        })
+        .min();
+
+    println!("Result: {}", result.unwrap())
+}
+
+pub fn part2_old(input_path: &Path) {
     let start = Instant::now();
     let almanac = load_input(input_path).unwrap();
     eprintln!("Loaded almanac:");
