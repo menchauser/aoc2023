@@ -6,48 +6,15 @@ mod day3;
 mod day4;
 mod day5;
 
-struct DayParts {
-    part1: fn(&Path) -> (),
-    part2: fn(&Path) -> (),
-}
+type PartFn = fn(&Path) -> ();
 
 fn main() {
-    let days: HashMap<String, DayParts> = HashMap::from([
-        (
-            "day1".to_string(),
-            DayParts {
-                part1: day1::part1,
-                part2: day1::part2,
-            },
-        ),
-        (
-            "day2".to_string(),
-            DayParts {
-                part1: day2::part1,
-                part2: day2::part2,
-            },
-        ),
-        (
-            "day3".to_string(),
-            DayParts {
-                part1: day3::part1,
-                part2: day3::part2,
-            },
-        ),
-        (
-            "day4".to_string(),
-            DayParts {
-                part1: day4::part1,
-                part2: day4::part2,
-            },
-        ),
-        (
-            "day5".to_string(),
-            DayParts {
-                part1: day5::part1,
-                part2: day5::part2,
-            },
-        ),
+    let days2: HashMap<&str, Vec<PartFn>> = HashMap::from([
+        ("day1", vec![day1::part1, day1::part2]),
+        ("day2", vec![day2::part1, day2::part2]),
+        ("day3", vec![day3::part1, day3::part2]),
+        ("day4", vec![day4::part1, day4::part2]),
+        ("day5", vec![day5::part1, day5::part2, day5::part3]),
     ]);
 
     // Program arguments:
@@ -59,23 +26,27 @@ fn main() {
         exit(1);
     }
 
-    let DayParts { part1, part2 } = days
-        .get(&args[1])
+    let day_parts = days2
+        .get(&args[1].as_str())
         .unwrap_or_else(|| panic!("I don't know the day {}", &args[1]));
-    let part: u8 = if args[2].starts_with("part") {
+    let part: usize = if args[2].starts_with("part") {
         &args[2][4..args[2].len()]
     } else {
         args[2].as_str()
     }
-    .parse()
-    .unwrap_or_else(|_| panic!("Could not parse part: it should be 1 or 2"));
+    .parse::<usize>()
+    .map(|p| p - 1)
+    .unwrap_or_else(|_| panic!("Could not parse part: it should be a number"));
     let path = Path::new(&args[3]);
-    match part {
-        1 => part1(path),
-        2 => part2(path),
-        _ => {
-            println!("Support only 1 and 2 parts");
-            exit(1)
-        }
+
+    if part >= day_parts.len() {
+        println!(
+            "Unknown part: {}, that day has only {} parts",
+            (part + 1),
+            day_parts.len()
+        );
+        exit(1);
     }
+    let part_fn = day_parts[part];
+    part_fn(path);
 }

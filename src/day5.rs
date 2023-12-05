@@ -1,11 +1,11 @@
+use rayon::iter::{IntoParallelRefIterator, ParallelBridge};
+use rayon::prelude::*;
 use std::cmp::Ordering;
 use std::fmt::Display;
 use std::fs::File;
 use std::io::{self, BufRead};
 use std::path::Path;
 use std::time::Instant;
-use rayon::iter::{ParallelBridge, IntoParallelRefIterator};
-use rayon::prelude::*;
 
 pub fn part1(input_path: &Path) {
     let almanac = load_input(input_path).unwrap();
@@ -24,43 +24,19 @@ pub fn part2(input_path: &Path) {
     let almanac = load_input(input_path).unwrap();
     eprintln!("Loaded almanac:");
     eprintln!("{}", &almanac);
-    let chunks: Vec<_> = almanac
-        .seeds
-        .chunks(2)
-        .map(|c| c[0]..(c[0] + c[1]))
-        .enumerate()
-        .collect();
-    let result = chunks
-        .par_iter()
-        .map(|(i, seed_range)| {
-            eprintln!("Start seed range {} of {}: start={}, length={}", 
-                      i, almanac.seeds.len() / 2, &seed_range.start, &seed_range.end - &seed_range.start);
-            eprintln!("Total running time before {}: {:?}", i, start.elapsed());
-            let result = seed_range.clone()
-                .map(|seed| map_to_location(seed, &almanac.rule_book))
-                .min()
-                .unwrap();
-            eprintln!("Total running time after {}: {:?}", i, start.elapsed());
-            result
-        })
-        .min();
-
-    println!("Result: {}", result.unwrap())
-}
-
-pub fn part2_old(input_path: &Path) {
-    let start = Instant::now();
-    let almanac = load_input(input_path).unwrap();
-    eprintln!("Loaded almanac:");
-    eprintln!("{}", &almanac);
     let result = almanac
         .seeds
         .chunks(2)
         .map(|c| c[0]..(c[0] + c[1]))
         .enumerate()
         .map(|(i, seed_range)| {
-            eprintln!("Start seed range {} of {}: start={}, length={}", 
-                      i, almanac.seeds.len() / 2, &seed_range.start, &seed_range.end - &seed_range.start);
+            eprintln!(
+                "Start seed range {} of {}: start={}, length={}",
+                i,
+                almanac.seeds.len() / 2,
+                &seed_range.start,
+                &seed_range.end - &seed_range.start
+            );
             eprintln!("Total running time before: {:?}", start.elapsed());
             seed_range
                 .map(|seed| map_to_location(seed, &almanac.rule_book))
@@ -72,12 +48,47 @@ pub fn part2_old(input_path: &Path) {
     println!("Result: {}", result.unwrap())
 }
 
+// Part 2 parallelized
+pub fn part3(input_path: &Path) {
+    let start = Instant::now();
+    let almanac = load_input(input_path).unwrap();
+    eprintln!("Loaded almanac:");
+    eprintln!("{}", &almanac);
+    let chunks: Vec<_> = almanac
+        .seeds
+        .chunks(2)
+        .map(|c| c[0]..(c[0] + c[1]))
+        .enumerate()
+        .collect();
+    let result = chunks
+        .par_iter()
+        .map(|(i, seed_range)| {
+            eprintln!(
+                "Start seed range {} of {}: start={}, length={}",
+                i,
+                almanac.seeds.len() / 2,
+                &seed_range.start,
+                &seed_range.end - &seed_range.start
+            );
+            eprintln!("Total running time before {}: {:?}", i, start.elapsed());
+            let result = seed_range
+                .clone()
+                .map(|seed| map_to_location(seed, &almanac.rule_book))
+                .min()
+                .unwrap();
+            eprintln!("Total running time after {}: {:?}", i, start.elapsed());
+            result
+        })
+        .min();
+
+    println!("Result: {}", result.unwrap())
+}
+
 struct RangeRule {
     src_key: u64,
     dst_key: u64,
     range_len: u64,
 }
-
 
 struct Almanac {
     seeds: Vec<u64>,
@@ -115,16 +126,18 @@ fn map_key_sorted(key: u64, rule_map: &Vec<RangeRule>) -> u64 {
     // we go through rules trying to find it key is in between [src..src+len]
     // if not, we just return as it is
     // we first binary search for rule which captures key
-    let found = rule_map.binary_search_by(|rr| if rr.contains(key) {
-        Ordering::Equal
-    } else {
-        return rr.src_key.cmp(&key);
+    let found = rule_map.binary_search_by(|rr| {
+        if rr.contains(key) {
+            Ordering::Equal
+        } else {
+            return rr.src_key.cmp(&key);
+        }
     });
     match found {
         Ok(idx) => {
             let rr = &rule_map[idx];
             rr.dst_key + key - rr.src_key
-        },
+        }
         Err(_) => key,
     }
 }
