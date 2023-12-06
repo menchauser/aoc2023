@@ -1,4 +1,4 @@
-use std::{collections::HashMap, env, path::Path, process::exit};
+use std::{env, path::Path, process::exit};
 
 mod day1;
 mod day2;
@@ -6,21 +6,37 @@ mod day3;
 mod day4;
 mod day5;
 mod day6;
+mod day7;
 
-type PartFn = fn(&Path) -> ();
+#[macro_export]
+macro_rules! day {
+    ($day:ident, $($fn:ident),*) => {
+        (stringify!($day), vec![$($day::$fn),*])
+    };
+}
+
+#[macro_export]
+macro_rules! gen_days {
+    ($($day:tt),*) => {
+        {
+            let map: std::collections::HashMap<&str, Vec<fn(&Path) -> ()>> = std::collections::HashMap::from([
+                $(day!$day),*
+            ]);
+            map
+        }
+    };
+}
 
 fn main() {
-    let days2: HashMap<&str, Vec<PartFn>> = HashMap::from([
-        ("day1", vec![day1::part1, day1::part2]),
-        ("day2", vec![day2::part1, day2::part2]),
-        ("day3", vec![day3::part1, day3::part2]),
-        ("day4", vec![day4::part1, day4::part2]),
-        (
-            "day5",
-            vec![day5::part1, day5::part2, day5::part3, day5::part4],
-        ),
-        ("day6", vec![day6::part1, day6::part2]),
-    ]);
+    let days = gen_days!(
+        (day1, part1, part2),
+        (day2, part1, part2),
+        (day3, part1, part2),
+        (day4, part1, part2),
+        (day5, part1, part2, part3, part4),
+        (day6, part1, part2),
+        (day7, part1, part2)
+    );
 
     // Program arguments:
     //  rust-aoc <day> <part> <input-file>
@@ -31,7 +47,7 @@ fn main() {
         exit(1);
     }
 
-    let day_parts = days2
+    let day_parts = days
         .get(&args[1].as_str())
         .unwrap_or_else(|| panic!("I don't know the day {}", &args[1]));
     let part: usize = if args[2].starts_with("part") {
