@@ -1,4 +1,4 @@
-use rayon::iter::{IntoParallelRefIterator, ParallelBridge};
+use rayon::iter::IntoParallelRefIterator;
 use rayon::prelude::*;
 use std::cmp::Ordering;
 use std::fmt::Display;
@@ -126,7 +126,7 @@ fn apply_rules(seed_ranges: &Vec<Range<u64>>, rule_map: &Vec<RangeRule>) -> Vec<
                     // we extract range part and immediately shift it according to rule
                     let extracted_sr = Range {
                         start: rule.dst_key,
-                        end: sr.end - rule.src_key + rule.dst_key
+                        end: sr.end - rule.src_key + rule.dst_key,
                     };
                     result.push(extracted_sr);
                     // remaining range
@@ -136,7 +136,7 @@ fn apply_rules(seed_ranges: &Vec<Range<u64>>, rule_map: &Vec<RangeRule>) -> Vec<
                     };
                 }
             } else if sr.start <= rule.src_key && sr.end >= rule.src_key + rule.range_len {
-                // special case: seed range contains rule within itself 
+                // special case: seed range contains rule within itself
                 todo!()
             }
         }
@@ -228,6 +228,7 @@ fn map_key_sorted(key: u64, rule_map: &Vec<RangeRule>) -> u64 {
     }
 }
 
+#[allow(dead_code)]
 fn map_key(key: u64, rule_map: &Vec<RangeRule>) -> u64 {
     rule_map
         .iter()

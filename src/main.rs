@@ -19,7 +19,7 @@ fn main() {
             "day5",
             vec![day5::part1, day5::part2, day5::part3, day5::part4],
         ),
-        ("day6", vec![day6::part1]),
+        ("day6", vec![day6::part1, day6::part2]),
     ]);
 
     // Program arguments:
