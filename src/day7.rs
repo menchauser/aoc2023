@@ -1,31 +1,28 @@
 use std::cmp::Ordering;
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
+use std::fmt::Display;
 use std::fs::File;
 use std::io::{self, BufRead};
 use std::path::Path;
 
 pub fn part1(input_path: &Path) {
     let input = load_input(input_path).unwrap();
-    println!("Read hands, bids and types");
+    eprintln!("Loaded new input:");
+    eprintln!("Debug -- Display:");
     for hand in &input {
-        println!(
-            "{} - {:?}    {}",
-            hand.hand,
-            hand_type(&hand.hand),
-            hand.bid
-        );
+        eprintln!("{:?} -- {}", hand, hand);
     }
     let mut hands = input;
-    hands.sort();
-    println!("Sorted hands (ASC):");
+    hands.sort_by(cmp_players);
+    eprintln!("Sorted hands (ASC):");
     for h in &hands {
-        println!("{} - {:?}", h.hand, hand_type(&h.hand));
+        eprintln!("{} - {:?}", h, hand_type(h.hand));
     }
-    let mut result = 0u32;
-    for (idx, hand) in hands.iter().rev().enumerate() {
-        let rank = hands.len() - idx;
-        result += hand.bid * rank as u32;
-    }
+    let result: u32 = hands
+        .iter()
+        .enumerate()
+        .map(|(idx, hand)| hand.bid * (idx + 1) as u32)
+        .sum();
     println!("Result: {}", result);
 }
 
@@ -33,7 +30,17 @@ pub fn part2(input_path: &Path) {
     todo!()
 }
 
-#[derive(PartialEq, PartialOrd, Eq, Ord, Debug)]
+fn cmp_players(lhs: &Player, rhs: &Player) -> Ordering {
+    // we compare hand types and if they are equal: "lexicographically" compare strings
+    let hand_cmp = hand_type(lhs.hand).cmp(&hand_type(rhs.hand));
+    if hand_cmp != Ordering::Equal {
+        return hand_cmp;
+    } else {
+        lhs.hand.cmp(&rhs.hand)
+    }
+}
+
+#[derive(PartialEq, Eq, PartialOrd, Ord, Debug)]
 enum HandType {
     HighCard,
     OnePair,
@@ -44,42 +51,31 @@ enum HandType {
     FiveOfKind,
 }
 
-#[derive(PartialEq, Eq)]
-struct Hand {
-    hand: String,
+#[derive(Debug)]
+struct Player {
+    hand: [u8; 5], // the size of hand is fixed
     bid: u32,
 }
 
-impl PartialOrd for Hand {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        Some(self.cmp(other))
-    }
-}
-impl Ord for Hand {
-    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        // we compare hand types and if they are equal: "lexicographically" compare strings
-        let hand_cmp = hand_type(&self.hand).cmp(&hand_type(&other.hand));
-        if hand_cmp != Ordering::Equal {
-            return hand_cmp;
-        } else {
-            // else compare char by char
-            // A > K > Q  > J > T > 9 ...
-            // remap for lexigographical comparison
-            let replacements = vec![("A", "Z"), ("K", "Y"), ("Q", "X"), ("J", "W"), ("T", "V")];
-            let mut self_hand = self.hand.clone();
-            let mut other_hand = other.hand.clone();
-            for (from_c, to_c) in replacements {
-                self_hand = self_hand.replace(from_c, to_c);
-                other_hand = other_hand.replace(from_c, to_c)
+impl Display for Player {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let card_rev_map: HashMap<u8, char> =
+            HashMap::from([(10, 'T'), (11, 'J'), (12, 'Q'), (13, 'K'), (14, 'A')]);
+        for c in self.hand {
+            if c < 10 {
+                write!(f, "{}", c)?;
+            } else {
+                write!(f, "{}", card_rev_map[&c])?;
             }
-            self_hand.cmp(&other_hand)
         }
+        write!(f, "  {}", self.bid)?;
+        Ok(())
     }
 }
 
-fn hand_type(hand: &str) -> HandType {
-    let mut card_counts: HashMap<char, usize> = HashMap::new();
-    for c in hand.chars() {
+fn hand_type(hand: [u8; 5]) -> HandType {
+    let mut card_counts: HashMap<u8, usize> = HashMap::new();
+    for c in hand {
         card_counts.entry(c).and_modify(|c| *c += 1).or_insert(1);
     }
     // if all cards are equal: five of a kind
@@ -103,13 +99,15 @@ fn hand_type(hand: &str) -> HandType {
         4 => HandType::OnePair,
         5 => HandType::HighCard,
         count => panic!(
-            "Unexpected hand passed with {} different cards: {}",
+            "Unexpected hand passed with {} different cards: {:?}",
             count, hand
         ),
     };
 }
 
-fn load_input(input_path: &Path) -> io::Result<Vec<Hand>> {
+fn load_input(input_path: &Path) -> io::Result<Vec<Player>> {
+    let card_map: HashMap<char, u8> =
+        HashMap::from([('T', 10), ('J', 11), ('Q', 12), ('K', 13), ('A', 14)]);
     let file = File::open(input_path)?;
     let buf_reader = io::BufReader::new(file);
     buf_reader
@@ -119,8 +117,18 @@ fn load_input(input_path: &Path) -> io::Result<Vec<Hand>> {
                 let mut split = l.split_whitespace();
                 let hand = split.next().unwrap().to_string();
                 let bid = split.next().unwrap().parse::<u32>().unwrap();
-                Hand {
-                    hand: hand,
+                let hand_vec: Vec<u8> = hand
+                    .chars()
+                    .map(|c| {
+                        if c.is_digit(10) {
+                            c.to_digit(10).unwrap() as u8
+                        } else {
+                            card_map[&c]
+                        }
+                    })
+                    .collect();
+                Player {
+                    hand: hand_vec.try_into().unwrap(),
                     bid: bid,
                 }
             })
