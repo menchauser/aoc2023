@@ -7,6 +7,7 @@ mod day4;
 mod day5;
 mod day6;
 mod day7;
+mod day8;
 
 #[macro_export]
 macro_rules! day {
@@ -35,7 +36,8 @@ fn main() {
         (day4, part1, part2),
         (day5, part1, part2, part3, part4),
         (day6, part1, part2),
-        (day7, part1, part2)
+        (day7, part1, part2),
+        (day8, part1, part2)
     );
 
     // Program arguments:
