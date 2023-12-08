@@ -1,13 +1,13 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::fs::File;
 use std::io::{self, BufRead};
 use std::ops::ControlFlow;
 use std::path::Path;
 use std::str::Chars;
+use std::time::Instant;
 
 pub fn part1(input_path: &Path) {
     let map = load_input(input_path).unwrap();
-    eprintln!("Loaded map: {:?}", map);
     // now let's iterate over instructions and jump one by one
     let rep_instr = RepeatedString::new(&map.instructions);
     let result = rep_instr
@@ -31,9 +31,65 @@ pub fn part1(input_path: &Path) {
     }
 }
 
-#[allow(unused)]
 pub fn part2(input_path: &Path) {
-    todo!()
+    let start = Instant::now();
+    let map = load_input(input_path).unwrap();
+    // now let's iterate over instructions and jump one by one
+    let rep_instr = RepeatedString::new(&map.instructions);
+    // now the state is now just single node but list of nodes
+    let start_nodes: Vec<&String> = map.network.keys().filter(|n| n.ends_with("A")).collect();
+    let path_count = start_nodes.len();
+    eprintln!("Starting nodes: {:?}", start_nodes);
+    let result = rep_instr
+        .enumerate()
+        .try_fold(start_nodes, |nodes, (step, direction)| {
+            if step % 10_000_000 == 0 {
+                eprintln!(
+                    "{:16?}: steps: {}, current position: {:?}",
+                    start.elapsed(),
+                    step,
+                    &nodes
+                );
+            }
+            // try optimizing without hashset for small one
+            let mut unique_count = 0;
+            for (i, &n) in nodes.iter().enumerate() {
+                if nodes.iter().take(i).all(|&x| x != n) {
+                    unique_count += 1
+                }
+            }
+            // let mut unique_nodes: HashSet<&String> = HashSet::new();
+            // for n in &nodes {
+            //     unique_nodes.insert(*n);
+            // }
+            // if unique_nodes.len() == path_count && unique_nodes.iter().all(|n| n.ends_with("Z")) {
+            //     ControlFlow::Break((step, nodes))
+            if unique_count == path_count && nodes.iter().all(|n| n.ends_with("Z")) {
+                ControlFlow::Break((step, nodes))
+            } else {
+                // else let's make a step for each node
+                let next_nodes = nodes
+                    .iter()
+                    .map(|n| {
+                        let next_step = &map.network[*n];
+                        match direction {
+                            'L' => &next_step.0,
+                            'R' => &next_step.1,
+                            _ => unreachable!(),
+                        }
+                    })
+                    .collect::<Vec<&String>>();
+
+                ControlFlow::Continue(next_nodes)
+            }
+        });
+
+    match result {
+        ControlFlow::Break((steps, nodes)) => {
+            println!("Result: {} (final nodes: {:?})", steps, nodes)
+        }
+        ControlFlow::Continue(_) => unreachable!(),
+    }
 }
 
 // Iterator which emits characters from string, repeated from the beginning when string ends
