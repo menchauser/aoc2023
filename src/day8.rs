@@ -92,6 +92,34 @@ pub fn part2(input_path: &Path) {
     }
 }
 
+// Test searching for a loop
+pub fn part3(input_path: &Path) {
+    let map = load_input(input_path).unwrap();
+    // let's go through a loop and check how often we will encounter Z
+    let start_nodes: Vec<&String> = map.network.keys().filter(|n| n.ends_with("A")).collect();
+    eprintln!("Start nodes: {:?}", start_nodes);
+    for start_node in start_nodes {
+        eprintln!("Check start node: {}", start_node);
+
+        let rep_instr = RepeatedString::new(&map.instructions);
+        rep_instr
+            .take(50)
+            .enumerate()
+            .fold(start_node, |n: &String, (step, direction)| {
+                if n.ends_with("Z") {
+                    println!("Step: {}, node: {}", step, n);
+                }
+                let (next_l, next_r) = &map.network[n];
+                match direction {
+                    'L' => next_l,
+                    'R' => next_r,
+                    _ => unreachable!(),
+                }
+            });
+    }
+    // the idea would be for each starting position to find its "cycle" length and then find multiple
+}
+
 // Iterator which emits characters from string, repeated from the beginning when string ends
 struct RepeatedString<'a> {
     string: &'a str,
