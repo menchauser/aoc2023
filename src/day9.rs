@@ -12,6 +12,22 @@ pub fn part1(input_path: &Path) {
     println!("Result: {}", result);
 }
 
+pub fn part2(input_path: &Path) {
+    let input = load_input(input_path).unwrap();
+    for row in &input {
+        eprintln!("{:?}", row);
+    }
+    eprintln!("Run simulation");
+    let result: i32 = input
+        .iter()
+        .map(|row| {
+            let rev_row: Vec<i32> = row.iter().rev().map(|n| *n).collect();
+            row_prediction(&rev_row)
+        })
+        .sum();
+    println!("Result: {}", result);
+}
+
 fn row_prediction(row: &Vec<i32>) -> i32 {
     let mut collected_diffs: Vec<Vec<i32>> = vec![row.clone()];
     let mut cur_row = row;
@@ -37,11 +53,6 @@ fn row_prediction(row: &Vec<i32>) -> i32 {
     }
     eprintln!("Predictions: {:?}", row_predictions);
     *row_predictions.last().unwrap()
-}
-
-#[allow(unused)]
-pub fn part2(input_path: &Path) {
-    todo!()
 }
 
 fn load_input(input_path: &Path) -> io::Result<Vec<Vec<i32>>> {
