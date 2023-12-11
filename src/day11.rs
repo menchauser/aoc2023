@@ -4,56 +4,17 @@ use std::path::Path;
 
 pub fn part1(input_path: &Path) {
     let image = load_input(input_path).unwrap();
-    eprintln!("Input image:");
-    eprintln_image(&image);
-    // now expand rows and cols
-    // to expand cols let's first calculate which calls are empty
-    let expanded_image = expand_image(&image);
-    eprintln!("Expanded rows and cols:");
-    eprintln_image(&expanded_image);
-    // now we have to take all # pairs and calcualate the distance between them
-    let galaxy_coords: Vec<(u32, u32)> = expanded_image
-        .iter()
-        .enumerate()
-        .flat_map(|(i, row)| {
-            row.iter()
-                .enumerate()
-                .filter(|(_, c)| **c == '#')
-                .map(move |(j, _)| (i as u32, j as u32))
-        })
-        .collect();
-    eprintln!("Found galaxies: {:?}", galaxy_coords);
-    // now we just have to find min_distance between two galaxies
-    //   we take that row1 <= row2 and col1 <= col2
-    //   then the distance is: (row2 - row1) + (col2 - col1)
-    let mut distances: Vec<u32> = Vec::new();
-
-    let mut count = 0;
-    for i in 0..galaxy_coords.len() - 1 {
-        for j in (i + 1)..galaxy_coords.len() {
-            count += 1;
-            let g1 = galaxy_coords[i];
-            let g2 = galaxy_coords[j];
-            let dist = distance(g1, g2);
-            eprintln!(
-                "{:02}: distance between {:?} and {:?} = {}",
-                count, g1, g2, dist
-            );
-            distances.push(dist);
-        }
-    }
-
-    let result: u32 = distances.iter().sum();
-    println!("Result: {}", result)
+    let result = calc_expanded_paths(&image, 2);
+    println!("Result: {}", result);
 }
 
 pub fn part2(input_path: &Path) {
     let image = load_input(input_path).unwrap();
-    let result = calc_expanded_paths(&image, 10);
+    let result = calc_expanded_paths(&image, 1_000_000);
     println!("Result: {}", result);
 }
 
-fn calc_expanded_paths(image: &Vec<Vec<char>>, expansion_scale: u32) -> u32 {
+fn calc_expanded_paths(image: &Vec<Vec<char>>, expansion_scale: u32) -> u64 {
     eprintln!("Input image:");
     eprintln_image(&image);
     let galaxy_coords: Vec<(u32, u32)> = image
@@ -66,35 +27,23 @@ fn calc_expanded_paths(image: &Vec<Vec<char>>, expansion_scale: u32) -> u32 {
                 .map(move |(j, _)| (i as u32, j as u32))
         })
         .collect();
-    eprintln!("Original galaxy coords: {:?}", galaxy_coords);
-    // now expand rows and cols
-    // to expand cols let's first calculate which calls are empty
-    let expanded_image = expand_image(&image);
-    eprintln!("Expanded rows and cols:");
-    eprintln_image(&expanded_image);
+    eprintln!("Original galaxy coords: {:?}", &galaxy_coords);
+    // now we find empty rows and cols
+    let empty_rows: Vec<u32> = empty_rows(&image);
+    let empty_cols: Vec<u32> = empty_cols(&image);
+    let expanded_galaxy_coords =
+        expand_coords(&galaxy_coords, &empty_rows, &empty_cols, expansion_scale);
+    eprintln!("Expanded galaxy coords: {:?}", &expanded_galaxy_coords);
+
     // now we have to take all # pairs and calcualate the distance between them
-    let galaxy_coords: Vec<(u32, u32)> = expanded_image
-        .iter()
-        .enumerate()
-        .flat_map(|(i, row)| {
-            row.iter()
-                .enumerate()
-                .filter(|(_, c)| **c == '#')
-                .map(move |(j, _)| (i as u32, j as u32))
-        })
-        .collect();
-    eprintln!("Found galaxies: {:?}", galaxy_coords);
-    // now we just have to find min_distance between two galaxies
-    //   we take that row1 <= row2 and col1 <= col2
-    //   then the distance is: (row2 - row1) + (col2 - col1)
     let mut distances: Vec<u32> = Vec::new();
 
     let mut count = 0;
-    for i in 0..galaxy_coords.len() - 1 {
-        for j in (i + 1)..galaxy_coords.len() {
+    for i in 0..expanded_galaxy_coords.len() - 1 {
+        for j in (i + 1)..expanded_galaxy_coords.len() {
             count += 1;
-            let g1 = galaxy_coords[i];
-            let g2 = galaxy_coords[j];
+            let g1 = expanded_galaxy_coords[i];
+            let g2 = expanded_galaxy_coords[j];
             let dist = distance(g1, g2);
             eprintln!(
                 "{:02}: distance between {:?} and {:?} = {}",
@@ -104,7 +53,7 @@ fn calc_expanded_paths(image: &Vec<Vec<char>>, expansion_scale: u32) -> u32 {
         }
     }
 
-    distances.iter().sum()
+    distances.iter().map(|x| *x as u64).sum()
 }
 
 fn distance(g1: (u32, u32), g2: (u32, u32)) -> u32 {
@@ -112,35 +61,44 @@ fn distance(g1: (u32, u32), g2: (u32, u32)) -> u32 {
     result as u32
 }
 
-fn is_empty_row(image: &Vec<Vec<char>>, row_idx: usize) -> bool {
-    let row = &image[row_idx];
-    row.iter().all(|c| *c == '.')
+fn empty_rows(image: &Vec<Vec<char>>) -> Vec<u32> {
+    image
+        .iter()
+        .enumerate()
+        .filter(|(_, row)| row.iter().all(|c| *c == '.'))
+        .map(|(i, _)| i as u32)
+        .collect()
 }
 
-fn expand_image(image: &Vec<Vec<char>>) -> Vec<Vec<char>> {
-    // to expand cols let's first calculate which calls are empty
-    let mut empty_col_idxs = Vec::new();
+fn empty_cols(image: &Vec<Vec<char>>) -> Vec<u32> {
+    // TODO: iterators
+    let mut empty_col_idxs: Vec<u32> = Vec::new();
     for j in 0..image[0].len() {
         if image.iter().all(|r| r[j] == '.') {
-            empty_col_idxs.push(j);
+            empty_col_idxs.push(j as u32);
         }
     }
-    // now update and insert
-    let mut expanded_image: Vec<Vec<char>> = Vec::new();
-    for i in 0..image.len() {
-        let mut new_row = Vec::new();
-        for j in 0..image[i].len() {
-            new_row.push(image[i][j]);
-            if empty_col_idxs.contains(&j) {
-                new_row.push('.');
-            }
-        }
-        expanded_image.push(new_row.clone());
-        if is_empty_row(&image, i) {
-            expanded_image.push(new_row.clone());
-        }
-    }
-    expanded_image
+    empty_col_idxs
+}
+
+fn expand_coords(
+    galaxy_coords: &Vec<(u32, u32)>,
+    empty_rows: &Vec<u32>,
+    empty_cols: &Vec<u32>,
+    expansion_scale: u32,
+) -> Vec<(u32, u32)> {
+    // each coord's i (and j) is increased by number of empty rows (or cols) before this galaxy's coord multiplied by scale
+    galaxy_coords
+        .iter()
+        .map(|(i, j)| {
+            let rows_before = empty_rows.iter().filter(|r| *r < i).count() as u32;
+            let cols_before = empty_cols.iter().filter(|c| *c < j).count() as u32;
+            (
+                i - rows_before + rows_before * expansion_scale,
+                j - cols_before + cols_before * expansion_scale,
+            )
+        })
+        .collect()
 }
 
 fn eprintln_image(image: &Vec<Vec<char>>) {
