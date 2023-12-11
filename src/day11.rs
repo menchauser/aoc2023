@@ -47,9 +47,64 @@ pub fn part1(input_path: &Path) {
     println!("Result: {}", result)
 }
 
-#[allow(unused)]
 pub fn part2(input_path: &Path) {
-    todo!()
+    let image = load_input(input_path).unwrap();
+    let result = calc_expanded_paths(&image, 10);
+    println!("Result: {}", result);
+}
+
+fn calc_expanded_paths(image: &Vec<Vec<char>>, expansion_scale: u32) -> u32 {
+    eprintln!("Input image:");
+    eprintln_image(&image);
+    let galaxy_coords: Vec<(u32, u32)> = image
+        .iter()
+        .enumerate()
+        .flat_map(|(i, row)| {
+            row.iter()
+                .enumerate()
+                .filter(|(_, c)| **c == '#')
+                .map(move |(j, _)| (i as u32, j as u32))
+        })
+        .collect();
+    eprintln!("Original galaxy coords: {:?}", galaxy_coords);
+    // now expand rows and cols
+    // to expand cols let's first calculate which calls are empty
+    let expanded_image = expand_image(&image);
+    eprintln!("Expanded rows and cols:");
+    eprintln_image(&expanded_image);
+    // now we have to take all # pairs and calcualate the distance between them
+    let galaxy_coords: Vec<(u32, u32)> = expanded_image
+        .iter()
+        .enumerate()
+        .flat_map(|(i, row)| {
+            row.iter()
+                .enumerate()
+                .filter(|(_, c)| **c == '#')
+                .map(move |(j, _)| (i as u32, j as u32))
+        })
+        .collect();
+    eprintln!("Found galaxies: {:?}", galaxy_coords);
+    // now we just have to find min_distance between two galaxies
+    //   we take that row1 <= row2 and col1 <= col2
+    //   then the distance is: (row2 - row1) + (col2 - col1)
+    let mut distances: Vec<u32> = Vec::new();
+
+    let mut count = 0;
+    for i in 0..galaxy_coords.len() - 1 {
+        for j in (i + 1)..galaxy_coords.len() {
+            count += 1;
+            let g1 = galaxy_coords[i];
+            let g2 = galaxy_coords[j];
+            let dist = distance(g1, g2);
+            eprintln!(
+                "{:02}: distance between {:?} and {:?} = {}",
+                count, g1, g2, dist
+            );
+            distances.push(dist);
+        }
+    }
+
+    distances.iter().sum()
 }
 
 fn distance(g1: (u32, u32), g2: (u32, u32)) -> u32 {
