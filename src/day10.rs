@@ -33,29 +33,46 @@ pub fn part2(input_path: &Path) {
             .push((col, c));
     }
     eprintln!("Collected loop borders map: {:?}", &loop_borders);
+    let mut loop_borders_vec: Vec<(usize, &Vec<(usize, char)>)> =
+        Vec::with_capacity(loop_borders.len());
+    for (k, v) in loop_borders.iter() {
+        loop_borders_vec.push((*k, v))
+    }
+    loop_borders_vec.sort_by_key(|(row, _)| *row);
     let mut result: usize = 0;
 
+    /*
+     * || - no switch
+     * |. - switch
+     * |F - no switch
+     * |J, |7 - unexpected
+     * |L - no switch
+     */
     // we should scan each row for loop elements
     // for each row
-    for (row, col_data) in loop_borders {
+    for (row, col_data) in loop_borders_vec {
         let row_line = String::from_iter(&input[row]);
         eprintln!("Scan row {:02}: {}", row, row_line);
-        let mut borders = col_data;
+        let mut borders = col_data.clone();
         borders.sort_by_key(|x| x.0);
         let mut flag = false;
         // I scan the whole row left to right
-        for j in 0..row_line.len() {
+        for j in 0..row_line.len() - 1 {
             // if current pipe is in the loop
             if let Some((col, pipe)) = borders.iter().find(|(col, _)| *col == j) {
                 match pipe {
                     // hit wall - switch flag
                     '|' | 'F' | '7' | 'J' | 'L' | 'S' => {
-                        flag = !flag;
+                        if input[row][j + 1] == '.' {
+                            flag = !flag;
+                            eprintln!("Hit {} at {:02} - switch flag to {}", pipe, col, flag);
+                        }
                     }
                     _ => {} // do nothing
                 }
             } else {
                 if flag && input[row][j] == '.' {
+                    eprintln!(". within loop");
                     result += 1
                 }
             }
