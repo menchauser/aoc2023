@@ -1,10 +1,10 @@
+use num::integer::lcm;
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::{self, BufRead};
 use std::ops::ControlFlow;
 use std::path::Path;
 use std::str::Chars;
-use std::time::Instant;
 
 pub fn part1(input_path: &Path) {
     let map = load_input(input_path).unwrap();
@@ -32,64 +32,47 @@ pub fn part1(input_path: &Path) {
 }
 
 pub fn part2(input_path: &Path) {
-    let start = Instant::now();
     let map = load_input(input_path).unwrap();
     // now let's iterate over instructions and jump one by one
     let rep_instr = RepeatedString::new(&map.instructions);
     // now the state is now just single node but list of nodes
     let start_nodes: Vec<&String> = map.network.keys().filter(|n| n.ends_with("A")).collect();
-    let path_count = start_nodes.len();
     eprintln!("Starting nodes: {:?}", start_nodes);
-    let result = rep_instr
-        .enumerate()
-        .try_fold(start_nodes, |nodes, (step, direction)| {
-            if step % 10_000_000 == 0 {
-                eprintln!(
-                    "{:16?}: steps: {}, current position: {:?}",
-                    start.elapsed(),
-                    step,
-                    &nodes
-                );
-            }
-            // try optimizing without hashset for small one
-            let mut unique_count = 0;
-            for (i, &n) in nodes.iter().enumerate() {
-                if nodes.iter().take(i).all(|&x| x != n) {
-                    unique_count += 1
-                }
-            }
-            // let mut unique_nodes: HashSet<&String> = HashSet::new();
-            // for n in &nodes {
-            //     unique_nodes.insert(*n);
-            // }
-            // if unique_nodes.len() == path_count && unique_nodes.iter().all(|n| n.ends_with("Z")) {
-            //     ControlFlow::Break((step, nodes))
-            if unique_count == path_count && nodes.iter().all(|n| n.ends_with("Z")) {
-                ControlFlow::Break((step, nodes))
-            } else {
-                // else let's make a step for each node
-                let next_nodes = nodes
-                    .iter()
-                    .map(|n| {
-                        let next_step = &map.network[*n];
-                        match direction {
-                            'L' => &next_step.0,
-                            'R' => &next_step.1,
-                            _ => unreachable!(),
+    // another possibility: let's count how many steps from each starting point until Z
+    // and then find least common multiple
+    let steps_by_node: Vec<u64> = start_nodes
+        .iter()
+        .map(|start_node| {
+            let curr_instr = rep_instr.clone();
+            let result =
+                curr_instr
+                    .enumerate()
+                    .try_fold(start_node.as_str(), |node, (step, direction)| {
+                        if node.ends_with("Z") {
+                            ControlFlow::Break((step, node))
+                        } else {
+                            let (next_l, next_r) = &map.network[node];
+                            match direction {
+                                'L' => ControlFlow::Continue(next_l.as_str()),
+                                'R' => ControlFlow::Continue(next_r.as_str()),
+                                _ => unreachable!(),
+                            }
                         }
-                    })
-                    .collect::<Vec<&String>>();
-
-                ControlFlow::Continue(next_nodes)
+                    });
+            match result {
+                ControlFlow::Break((steps, node)) => {
+                    eprintln!("{} reached {} in {} steps", &start_node, node, steps);
+                    steps as u64
+                }
+                ControlFlow::Continue(_) => unreachable!(),
             }
-        });
-
-    match result {
-        ControlFlow::Break((steps, nodes)) => {
-            println!("Result: {} (final nodes: {:?})", steps, nodes)
-        }
-        ControlFlow::Continue(_) => unreachable!(),
-    }
+        })
+        .collect();
+    let result = steps_by_node.iter().fold(1u64, |curr_lcm, val| {
+        eprintln!("Calculate LCM of {} and {}", curr_lcm, val);
+        lcm(curr_lcm, *val)
+    });
+    println!("Result: {}", result);
 }
 
 // Test searching for a loop
@@ -147,6 +130,12 @@ impl<'a> Iterator for RepeatedString<'a> {
             self.current_iter = self.string.chars();
             self.next()
         }
+    }
+}
+
+impl<'a> Clone for RepeatedString<'a> {
+    fn clone(&self) -> Self {
+        Self::new(self.string)
     }
 }
 
