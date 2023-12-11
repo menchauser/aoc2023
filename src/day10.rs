@@ -22,6 +22,10 @@ pub fn part2(input_path: &Path) {
     // f|tt|f|tt|f
     // we need to remember the whole loop path to achieve that
     let input = load_input(input_path).unwrap();
+    eprintln!("Image:");
+    for row in &input {
+        eprintln!("{}", row.iter().collect::<String>());
+    }
     let path = find_path(&input);
     eprintln!("Full path: {:?}", path);
     // now let's group borders by row: in map key is row number and value is list of columns at which borders are present
@@ -32,7 +36,7 @@ pub fn part2(input_path: &Path) {
             .or_insert_with(|| Vec::with_capacity(1))
             .push((col, c));
     }
-    eprintln!("Collected loop borders map: {:?}", &loop_borders);
+    // eprintln!("Collected loop borders map: {:?}", &loop_borders);
     let mut loop_borders_vec: Vec<(usize, &Vec<(usize, char)>)> =
         Vec::with_capacity(loop_borders.len());
     for (k, v) in loop_borders.iter() {
@@ -42,17 +46,26 @@ pub fn part2(input_path: &Path) {
     let mut result: usize = 0;
 
     /*
-     * || - no switch
      * |. - switch
-     * |F - no switch
-     * |J, |7 - unexpected
-     * |L - no switch
+     * || - open-close
+     * |F - open-close
+     * |J, |7, |- - impossible
+     * |L - open-close
+     *
+     * L. - impossible
+     * L- - open-close
+     * L
+     * -* - nothing
+     *
+     * Maybe we should consider char pairs
+     *
      */
     // we should scan each row for loop elements
     // for each row
     for (row, col_data) in loop_borders_vec {
         let row_line = String::from_iter(&input[row]);
         eprintln!("Scan row {:02}: {}", row, row_line);
+        eprint!("             ");
         let mut borders = col_data.clone();
         borders.sort_by_key(|x| x.0);
         let mut flag = false;
@@ -63,20 +76,24 @@ pub fn part2(input_path: &Path) {
                 match pipe {
                     // hit wall - switch flag
                     '|' | 'F' | '7' | 'J' | 'L' | 'S' => {
-                        if input[row][j + 1] == '.' {
-                            flag = !flag;
-                            eprintln!("Hit {} at {:02} - switch flag to {}", pipe, col, flag);
-                        }
+                        flag = !flag;
+                        // eprintln!("Hit {} at {:02} - switch flag to {}", pipe, col, flag);
                     }
                     _ => {} // do nothing
                 }
+                let flag_c = if flag { '1' } else { '0' };
+                eprint!("{}", flag_c)
             } else {
                 if flag && input[row][j] == '.' {
-                    eprintln!(". within loop");
+                    // eprintln!(". within loop");
+                    eprint!("@");
                     result += 1
+                } else {
+                    eprint!("{}", input[row][j]);
                 }
             }
         }
+        eprintln!();
         // for i in 1..borders.len() {
         //     flag = !flag;
         //     if flag {
