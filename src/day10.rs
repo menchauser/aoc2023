@@ -5,22 +5,93 @@ use std::path::Path;
 
 pub fn part1(input_path: &Path) {
     let input = load_input(input_path).unwrap();
-    let mut s_row: usize = 0;
-    let mut s_col: usize = 0;
+    let (s_row, s_col) = find_start(&input);
+    eprintln!("Found S position: {}, {}", &s_row, &s_col);
+    let path = find_path(&input);
+    eprintln!("Full path: {:?}", &path);
+    println!("Result: {}", path.len() / 2);
+}
 
+pub fn part2(input_path: &Path) {
+    // the idea is to use scan-line polygon fill
+    // we go in horizontal line until we encounter 'loop'
+    // we have a flag which signifies that we are within polygon
+    // ever time we cross a border, we invert this flag. if it is enabled - we are in polygon
+    // for example let's go with one of the lines:
+    // .|..|.|..|.
+    // f|tt|f|tt|f
+    // we need to remember the whole loop path to achieve that
+    let input = load_input(input_path).unwrap();
+    let path = find_path(&input);
+    eprintln!("Full path: {:?}", path);
+    // now let's group borders by row: in map key is row number and value is list of columns at which borders are present
+    let mut loop_borders: HashMap<usize, Vec<(usize, char)>> = HashMap::with_capacity(input.len());
+    for (row, col, c) in path {
+        loop_borders
+            .entry(row)
+            .or_insert_with(|| Vec::with_capacity(1))
+            .push((col, c));
+    }
+    eprintln!("Collected loop borders map: {:?}", &loop_borders);
+    let mut result: usize = 0;
+
+    // we should scan each row for loop elements
+    // for each row
+    for (row, col_data) in loop_borders {
+        let row_line = String::from_iter(&input[row]);
+        eprintln!("Scan row {:02}: {}", row, row_line);
+        let mut borders = col_data;
+        borders.sort_by_key(|x| x.0);
+        let mut flag = false;
+        // I scan the whole row left to right
+        for j in 0..row_line.len() {
+            // if current pipe is in the loop
+            if let Some((col, pipe)) = borders.iter().find(|(col, _)| *col == j) {
+                match pipe {
+                    // hit wall - switch flag
+                    '|' | 'F' | '7' | 'J' | 'L' | 'S' => {
+                        flag = !flag;
+                    }
+                    _ => {} // do nothing
+                }
+            } else {
+                if flag && input[row][j] == '.' {
+                    result += 1
+                }
+            }
+        }
+        // for i in 1..borders.len() {
+        //     flag = !flag;
+        //     if flag {
+        //         let inside_tiles = borders[i] - borders[i - 1] - 1;
+        //         if inside_tiles != 0 {
+        //             eprintln!(
+        //                 "Found {} at row {} ({}..{})",
+        //                 inside_tiles,
+        //                 row,
+        //                 borders[i - 1],
+        //                 borders[i]
+        //             );
+        //         }
+        //         result += inside_tiles;
+        //     }
+        // }
+    }
+    println!("Result: {}", result);
+}
+
+fn find_start(input: &Vec<Vec<char>>) -> (usize, usize) {
     for (i, row) in input.iter().enumerate() {
         let found = row.iter().enumerate().find(|(_, c)| **c == 'S');
         if found.is_some() {
-            s_row = i;
-            s_col = found.unwrap().0;
-            break;
+            return (i, found.unwrap().0);
         }
     }
-    eprintln!("Found S position: {}, {}", &s_row, &s_col);
+    unreachable!()
+}
 
-    // now find loop length
-    // we take first connection for S
-    // then we look for connections until we reach S again
+fn find_path(input: &Vec<Vec<char>>) -> Vec<(usize, usize, char)> {
+    let (s_row, s_col) = find_start(input);
     let s_connections = connections(&input, s_row, s_col, &all_directions());
     eprintln!("S connections: {:?}", s_connections);
     if s_connections.len() != 2 {
@@ -29,29 +100,25 @@ pub fn part1(input_path: &Path) {
             s_connections.len()
         );
     }
+    let mut full_path: Vec<(usize, usize, char)> = vec![(s_row, s_col, 'S')];
     let random_step = s_connections.iter().next().unwrap();
     let mut direction: Direction = *random_step.0;
     let mut curr_pipe: char = *random_step.1;
     let mut next_row = s_row;
     let mut next_col = s_col;
-    let mut step_count = 0;
-    loop {
-        step_count += 1;
-        if curr_pipe == 'S' {
-            eprintln!("Finished loop {} steps", step_count);
-            break;
-        }
+    while curr_pipe != 'S' {
         let (d_row, d_col) = delta(direction);
         next_row = ((next_row as i16) + d_row) as usize;
         next_col = ((next_col as i16) + d_col) as usize;
-        eprintln!(
-            "Chosen to connect on {} at {}, {}",
-            curr_pipe, next_row, next_col
-        );
+        full_path.push((next_row, next_col, curr_pipe));
+        // eprintln!(
+        //     "Chosen to connect on {} at {}, {}",
+        //     curr_pipe, next_row, next_col
+        // );
         // we should build a list of directions without previous step
         let next_dirs = directions_from(direction);
         let next_conns = connections(&input, next_row, next_col, &next_dirs);
-        eprintln!("New connections: {:?}", next_conns);
+        // eprintln!("New connections: {:?}", next_conns);
         if next_conns.len() != 1 {
             panic!("We have more than 1 next connection!");
         }
@@ -59,12 +126,7 @@ pub fn part1(input_path: &Path) {
         direction = *next_step.0;
         curr_pipe = *next_step.1;
     }
-    println!("Result: {}", step_count / 2);
-}
-
-#[allow(unused)]
-pub fn part2(input_path: &Path) {
-    todo!()
+    full_path
 }
 
 // Check available directions from the pipe reached by direction d.
