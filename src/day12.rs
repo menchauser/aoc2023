@@ -10,7 +10,7 @@ pub fn part1(input_path: &Path) {
     for c in &input {
         eprintln!("{}", c);
     }
-    let result: u32 = input.iter().map(count_arrangements).sum();
+    let result: u32 = input.iter().take(2).map(count_arrangements).sum();
     println!("Result: {}", result)
 }
 
@@ -20,7 +20,7 @@ pub fn part2(input_path: &Path) {
 }
 
 fn count_arrangements(cond: &Condition) -> u32 {
-    eprintln!("Counting arrangement for {}", cond);
+    eprintln!("Arrangements for:\n'{}'", cond);
     // let mut test_arrangement = Vec::new();
     let group_strs: Vec<String> = cond
         .damaged_groups
@@ -29,8 +29,13 @@ fn count_arrangements(cond: &Condition) -> u32 {
         .collect();
 
     let mut first = true;
-    let mut result_string = String::with_capacity(cond.record.len());
-    for s in &group_strs {
+    let cap = cond.record.len();
+    let mut result_string = String::with_capacity(cap);
+    // at every point in time we have a constant 'prefix' and variable 'suffix'
+    // we should iterate moving suffix from its starting point to possible end point (cap - suffix.len)
+    // let's play with taking first N-1 groups as prefix and last group as suffix
+
+    for s in &group_strs[..group_strs.len() - 1] {
         if first {
             first = false;
         } else {
@@ -38,8 +43,48 @@ fn count_arrangements(cond: &Condition) -> u32 {
         }
         result_string.push_str(s);
     }
-    println!("Generated arrangement str: '{}'", &result_string);
+    for _ in 0..(result_string.capacity() - result_string.len()) {
+        result_string.push('.');
+    }
+    println!("'{}'", &result_string);
+
     1
+}
+
+// Generate all positions of group sized g within capacity cap
+fn all_positions(g: usize, cap: usize) -> Vec<String> {
+    assert!(g <= cap);
+    let g_str = repeat('#').take(g).collect::<String>();
+    let mut result = Vec::with_capacity(cap as usize);
+    for i in 0..(cap - g + 1) {
+        let mut new_pos = String::with_capacity(cap);
+        for _ in 0..i {
+            new_pos.push('.');
+        }
+        new_pos.push_str(&g_str);
+        for _ in (i + g)..cap {
+            new_pos.push('.');
+        }
+        result.push(new_pos);
+    }
+    result
+}
+
+fn format_groups(groups: &[u32]) -> String {
+    let mut group_str_iter = groups
+        .iter()
+        .map(|size| repeat('#').take(*size as usize).collect::<String>());
+    let mut first = true;
+    let mut result = String::with_capacity(groups.len() * 2 - 1); // just a guess
+    while let Some(group) = group_str_iter.next() {
+        if first {
+            first = false;
+        } else {
+            result.push('.');
+        }
+        result.push_str(&group);
+    }
+    result
 }
 
 struct Condition {
@@ -88,6 +133,19 @@ fn load_input(input_path: &Path) -> io::Result<Vec<Condition>> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_format_groups() {
+        assert_eq!("#", format_groups(&[1]));
+        assert_eq!("###", format_groups(&[3]));
+        assert_eq!("#.#.###", format_groups(&[1, 1, 3]));
+    }
+
+    #[test]
+    fn test_all_positions() {
+        assert_eq!(vec!["###..", ".###.", "..###"], all_positions(3, 5));
+        assert_eq!(vec!["#...", ".#..", "..#.", "...#"], all_positions(1, 4))
+    }
 
     #[test]
     fn test_simple_arrangements() {
