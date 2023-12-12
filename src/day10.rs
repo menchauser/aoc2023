@@ -72,7 +72,7 @@ pub fn part2(input_path: &Path) {
         // I scan the whole row left to right
         for j in 0..row_line.len() - 1 {
             // if current pipe is in the loop
-            if let Some((col, pipe)) = borders.iter().find(|(col, _)| *col == j) {
+            if let Some((_, pipe)) = borders.iter().find(|(col, _)| *col == j) {
                 match pipe {
                     // hit wall - switch flag
                     '|' | 'F' | '7' | 'J' | 'L' | 'S' => {
