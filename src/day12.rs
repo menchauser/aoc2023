@@ -1,6 +1,7 @@
 use std::fmt::Display;
 use std::fs::File;
 use std::io::{self, BufRead};
+use std::iter::repeat;
 use std::path::Path;
 
 pub fn part1(input_path: &Path) {
@@ -19,7 +20,26 @@ pub fn part2(input_path: &Path) {
 }
 
 fn count_arrangements(cond: &Condition) -> u32 {
-    0
+    eprintln!("Counting arrangement for {}", cond);
+    // let mut test_arrangement = Vec::new();
+    let group_strs: Vec<String> = cond
+        .damaged_groups
+        .iter()
+        .map(|size| repeat('#').take(*size as usize).collect())
+        .collect();
+
+    let mut first = true;
+    let mut result_string = String::with_capacity(cond.record.len());
+    for s in &group_strs {
+        if first {
+            first = false;
+        } else {
+            result_string.push('.');
+        }
+        result_string.push_str(s);
+    }
+    println!("Generated arrangement str: '{}'", &result_string);
+    1
 }
 
 struct Condition {
