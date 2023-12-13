@@ -6,27 +6,25 @@ use std::path::Path;
 
 pub fn part1(input_path: &Path) {
     let input = load_input(input_path).unwrap();
-    // println!("Loaded patterns:");
-    // for pattern in &input {
-    //     println!("{}", pattern);
-    // }
-
-    for pattern in &input {
-        eprintln!("Check pattern:\n{}", pattern);
-        let result = find_vertical_mirror(pattern)
-            .map(|col| {
-                eprintln!("Vertical mirror at position {}", col + 1);
-                col + 1
-            })
-            .or_else(|| {
-                find_horizontal_mirror(pattern).map(|row| {
+    let result: u32 = input
+        .iter()
+        .map(|pat| {
+            eprintln!("Scan pattern:\n{}", pat);
+            find_horizontal_mirror(pat)
+                .map(|row| {
                     eprintln!("Horizontal mirror at position {}", row + 1);
-                    (row + 1) * 100
+                    ((row + 1) * 100) as u32
                 })
-            })
-            .unwrap();
-        println!("Result: {}", result)
-    }
+                .or_else(|| {
+                    find_vertical_mirror(pat).map(|col| {
+                        eprintln!("Vertical mirror at position {}", col + 1);
+                        (col + 1) as u32
+                    })
+                })
+                .unwrap()
+        })
+        .sum();
+    println!("Result: {}", result);
 }
 
 #[allow(unused)]
@@ -35,33 +33,50 @@ pub fn part2(input_path: &Path) {
 }
 
 fn find_vertical_mirror(pat: &Pattern) -> Option<usize> {
-    // we need to find first position where two cols are equal
-    // and then go sideways from that position
-    for j in 0..pat.data[0].len() - 1 {
-        // compare this column to next
-        let this_col_iter = pat.data.iter().map(|row| row[j]);
-        let next_col_iter = pat.data.iter().map(|row| row[j + 1]);
+    // find first possible position where two cols are equal
+    let width = pat.data[0].len();
+    let mirror_col = (0..width - 1).find(|col| cols_eq(pat, *col, *col + 1));
 
-        if this_col_iter.eq(next_col_iter) {
-            return Some(j);
+    // and then go sideways from that position
+    return mirror_col.and_then(|col| {
+        if zip((0..col).rev(), (col + 2)..width).all(|(col1, col2)| {
+            eprintln!("Compare columns {} - {}", col1, col2);
+            cols_eq(pat, col1, col2)
+        }) {
+            Some(col)
+        } else {
+            None
         }
-    }
-    None
+    });
 }
 
 fn find_horizontal_mirror(pat: &Pattern) -> Option<usize> {
-    // compare this row to next
-    for i in 0..pat.data.len() - 1 {
-        eprintln!("Compare rows:");
-        eprintln!("{:?}", pat.data[i]);
-        eprintln!("{:?}", pat.data[i + 1]);
-        let this_row_iter = pat.data[i].iter();
-        let next_row_iter = pat.data[i + 1].iter();
-        if this_row_iter.eq(next_row_iter) {
-            return Some(i);
+    let height = pat.data.len();
+    let mirror_row = (0..height - 1).find(|row| rows_eq(pat, *row, *row + 1));
+
+    // go up and down from row
+    return mirror_row.and_then(|row| {
+        if zip((0..row).rev(), (row + 2)..height).all(|(row1, row2)| {
+            eprintln!("Compare rows {} - {}", row1, row2);
+            rows_eq(pat, row1, row2)
+        }) {
+            Some(row)
+        } else {
+            None
         }
-    }
-    None
+    });
+}
+
+fn cols_eq(pat: &Pattern, col1: usize, col2: usize) -> bool {
+    let this_col_iter = pat.data.iter().map(|row| row[col1]);
+    let next_col_iter = pat.data.iter().map(|row| row[col2]);
+    this_col_iter.eq(next_col_iter)
+}
+
+fn rows_eq(pat: &Pattern, row1: usize, row2: usize) -> bool {
+    let this_row_iter = pat.data[row1].iter();
+    let next_row_iter = pat.data[row2].iter();
+    this_row_iter.eq(next_row_iter)
 }
 
 struct Pattern {
@@ -70,8 +85,13 @@ struct Pattern {
 
 impl Display for Pattern {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        for row in &self.data {
-            writeln!(f, "{}", row.iter().collect::<String>())?;
+        write!(f, "  ")?;
+        for j in 0..self.data[0].len() {
+            write!(f, "{:X}", j)?;
+        }
+        writeln!(f)?;
+        for (i, row) in self.data.iter().enumerate() {
+            writeln!(f, "{:X} {}", i, row.iter().collect::<String>())?;
         }
         Ok(())
     }
