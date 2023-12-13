@@ -52,6 +52,7 @@ fn count_arrangements(cond: &Condition) -> u32 {
 }
 
 // Generate all positions of group sized g within capacity cap
+#[allow(dead_code)]
 fn all_positions(g: usize, cap: usize) -> Vec<String> {
     assert!(g <= cap);
     let g_str = repeat('#').take(g).collect::<String>();
@@ -70,6 +71,7 @@ fn all_positions(g: usize, cap: usize) -> Vec<String> {
     result
 }
 
+#[allow(dead_code)]
 fn format_groups(groups: &[u32]) -> String {
     let mut group_str_iter = groups
         .iter()
