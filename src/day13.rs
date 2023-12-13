@@ -35,36 +35,40 @@ pub fn part2(input_path: &Path) {
 fn find_vertical_mirror(pat: &Pattern) -> Option<usize> {
     // find first possible position where two cols are equal
     let width = pat.data[0].len();
-    let mirror_col = (0..width - 1).find(|col| cols_eq(pat, *col, *col + 1));
-
-    // and then go sideways from that position
-    return mirror_col.and_then(|col| {
+    let mirror_col_hyp = (0..width - 1).filter(|col| cols_eq(pat, *col, *col + 1));
+    for col in mirror_col_hyp {
+        // early exist for first/last columns
+        if col == 0 || col == width - 1 {
+            return Some(col);
+        }
+        // otherwise, let's check sideways
         if zip((0..col).rev(), (col + 2)..width).all(|(col1, col2)| {
             eprintln!("Compare columns {} - {}", col1, col2);
             cols_eq(pat, col1, col2)
         }) {
-            Some(col)
-        } else {
-            None
+            return Some(col);
         }
-    });
+    }
+    None
 }
 
 fn find_horizontal_mirror(pat: &Pattern) -> Option<usize> {
     let height = pat.data.len();
-    let mirror_row = (0..height - 1).find(|row| rows_eq(pat, *row, *row + 1));
-
-    // go up and down from row
-    return mirror_row.and_then(|row| {
+    let mirror_row_hyp = (0..height - 1).filter(|row| rows_eq(pat, *row, *row + 1));
+    for row in mirror_row_hyp {
+        // early exist for first/last rows
+        if row == 0 || row == height - 1 {
+            return Some(row);
+        }
+        // otherwise, let's check sideways
         if zip((0..row).rev(), (row + 2)..height).all(|(row1, row2)| {
             eprintln!("Compare rows {} - {}", row1, row2);
             rows_eq(pat, row1, row2)
         }) {
-            Some(row)
-        } else {
-            None
+            return Some(row);
         }
-    });
+    }
+    None
 }
 
 fn cols_eq(pat: &Pattern, col1: usize, col2: usize) -> bool {
