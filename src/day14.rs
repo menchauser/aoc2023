@@ -1,5 +1,5 @@
 use std::fs::File;
-use std::io::{self, stderr, BufRead, Write};
+use std::io::{self, BufRead, Write};
 use std::path::Path;
 
 pub fn part1(input_path: &Path) {
@@ -16,6 +16,7 @@ pub fn part1(input_path: &Path) {
     println!("Result: {}", result);
 }
 
+#[allow(unused)]
 fn println_panel(w: &mut dyn Write, input: &Vec<Vec<char>>) {
     for row in input {
         for c in row {
@@ -32,6 +33,20 @@ fn slide_north(panel: &Vec<Vec<char>>) -> Vec<Vec<char>> {
         slide_column_north(&mut result, j);
     }
     result
+}
+
+#[allow(unused)]
+fn slide_column_north2(panel: &mut Vec<Vec<char>>, col: usize) {
+    // another approach:
+    //   find all possible 'stopping' locations (top, first O in column, #)
+    //   count the number of O between stopping locations
+    //   write down number of Os after each stopping location
+    // top is always a 'stopping' position
+    let mut stop_cols = vec![0];
+    // if column starts with '.' - its a stopping position, otherwise we look for first 'O'
+    if panel[0][col] == '.' {
+        stop_cols.push(0);
+    }
 }
 
 fn slide_column_north(panel: &mut Vec<Vec<char>>, col: usize) {
@@ -90,4 +105,28 @@ fn load_input(input_path: &Path) -> io::Result<Vec<Vec<char>>> {
         .lines()
         .map(|line| line.map(|l| l.chars().collect()))
         .collect()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_slide_north() {
+        let input = load_input(Path::new("day141.test")).unwrap();
+        let result = slide_north(&input);
+        let expected = vec![
+            vec!['O', 'O', 'O', 'O', '.', '#', '.', 'O', '.', '.'],
+            vec!['O', 'O', '.', '.', '#', '.', '.', '.', '.', '#'],
+            vec!['O', 'O', '.', '.', 'O', '#', '#', '.', '.', 'O'],
+            vec!['O', '.', '.', '#', '.', 'O', 'O', '.', '.', '.'],
+            vec!['.', '.', '.', '.', '.', '.', '.', '.', '#', '.'],
+            vec!['.', '.', '#', '.', '.', '.', '.', '#', '.', '#'],
+            vec!['.', '.', 'O', '.', '.', '#', '.', 'O', '.', 'O'],
+            vec!['.', '.', 'O', '.', '.', '.', '.', '.', '.', '.'],
+            vec!['#', '.', '.', '.', '.', '#', '#', '#', '.', '.'],
+            vec!['#', '.', '.', '.', '.', '#', '.', '.', '.', '.'],
+        ];
+        assert_eq!(expected, result);
+    }
 }
