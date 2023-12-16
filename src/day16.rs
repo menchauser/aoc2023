@@ -5,13 +5,101 @@ use std::path::Path;
 
 pub fn part1(input_path: &Path) {
     let contraption = load_input(input_path).unwrap();
+    let beam_energies = fill_energies(&contraption, Beam::new(0, 0, Direction::East));
+    eprintln!("Resulting energy map:");
+    for row in &beam_energies {
+        for c in row {
+            eprint!("{}", c);
+        }
+        eprintln!();
+    }
+    let result: usize = beam_energies
+        .iter()
+        .map(|row| row.iter().filter(|c| **c == '#').count())
+        .sum();
+    println!("Result: {}", result)
+}
+
+pub fn part2(input_path: &Path) {
+    let contraption = load_input(input_path).unwrap();
+    let mut total_energies = Vec::<usize>::new();
+    // top and bottom edge
+    for j in 0..contraption[0].len() {
+        let beam_energies = fill_energies(&contraption, Beam::new(0, j, Direction::South));
+        total_energies.push(
+            beam_energies
+                .iter()
+                .map(|row| row.iter().filter(|c| **c == '#').count())
+                .sum(),
+        );
+        let beam_energies = fill_energies(
+            &contraption,
+            Beam::new(contraption.len() - 1, j, Direction::North),
+        );
+        total_energies.push(
+            beam_energies
+                .iter()
+                .map(|row| row.iter().filter(|c| **c == '#').count())
+                .sum(),
+        );
+    }
+    // left and right edge
+    for i in 0..contraption.len() {
+        let beam_energies = fill_energies(&contraption, Beam::new(i, 0, Direction::East));
+        total_energies.push(
+            beam_energies
+                .iter()
+                .map(|row| row.iter().filter(|c| **c == '#').count())
+                .sum(),
+        );
+        let beam_energies = fill_energies(
+            &contraption,
+            Beam::new(i, contraption[0].len() - 1, Direction::West),
+        );
+        total_energies.push(
+            beam_energies
+                .iter()
+                .map(|row| row.iter().filter(|c| **c == '#').count())
+                .sum(),
+        );
+    }
+    let result = total_energies.iter().max().unwrap();
+    println!("Result: {}", result)
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+enum Direction {
+    North,
+    East,
+    South,
+    West,
+}
+
+#[derive(Debug, Hash, PartialEq, Eq, Clone)]
+struct Beam {
+    row: usize,
+    col: usize,
+    dir: Direction,
+}
+
+impl Beam {
+    fn new(row: usize, col: usize, dir: Direction) -> Self {
+        Self { row, col, dir }
+    }
+
+    fn with_dir(&self, dir: Direction) -> Self {
+        Self { dir: dir, ..*self }
+    }
+}
+
+fn fill_energies(contraption: &Vec<Vec<char>>, start_beam: Beam) -> Vec<Vec<char>> {
     let max_row = contraption.len() - 1;
     let max_col = contraption[0].len() - 1;
     // so stupid idea is:
     //  we have a vec of beams and step until all elements of list stop
     //  each beam state consists of: Direction (N/E/S/W or STOP)
     //  each beam should go its path until it finishes (in wall) or starts looping
-    let mut beams = VecDeque::from([Beam::new(0, 0, Direction::East)]);
+    let mut beams = VecDeque::from([start_beam]);
     // let mut result_energies = empty_energy_template(&contraption);
     // we have a resulting plan of eneergized cells
     let mut beam_energies = empty_energy_template(&contraption);
@@ -112,64 +200,13 @@ pub fn part1(input_path: &Path) {
         // merge new energies to existing
         // merge_energies(&mut result_energies, &beam_energies);
     }
-    eprintln!("Resulting energy map:");
-    for row in &beam_energies {
-        for c in row {
-            eprint!("{}", c);
-        }
-        eprintln!();
-    }
-    let result: usize = beam_energies
-        .iter()
-        .map(|row| row.iter().filter(|c| **c == '#').count())
-        .sum();
-    println!("Result: {}", result)
-}
-
-#[allow(unused)]
-pub fn part2(input_path: &Path) {
-    todo!()
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-enum Direction {
-    North,
-    East,
-    South,
-    West,
-}
-
-#[derive(Debug, Hash, PartialEq, Eq, Clone)]
-struct Beam {
-    row: usize,
-    col: usize,
-    dir: Direction,
-}
-
-impl Beam {
-    fn new(row: usize, col: usize, dir: Direction) -> Self {
-        Self { row, col, dir }
-    }
-
-    fn with_dir(&self, dir: Direction) -> Self {
-        Self { dir: dir, ..*self }
-    }
+    beam_energies
 }
 
 // this structure contains list of chars with directions in which this point was passed
 fn empty_energy_template(contraption: &Vec<Vec<char>>) -> Vec<Vec<char>> {
     vec![vec!['.'; contraption[0].len()]; contraption.len()]
 }
-
-// fn merge_energies(result: &mut Vec<Vec<char>>, update: &Vec<Vec<char>>) {
-//     for (i, row) in update.iter().enumerate() {
-//         for (j, val) in row.iter().enumerate() {
-//             if *val == '#' {
-//                 result[i][j] = '#';
-//             }
-//         }
-//     }
-// }
 
 fn try_step_beam(max_row: usize, max_col: usize, beam: &Beam) -> Option<Beam> {
     match beam.dir {
