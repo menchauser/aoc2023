@@ -113,9 +113,9 @@ pub fn part1(input_path: &Path) {
         }
     }
     // now second part: fill field
-    // to do that we add one more col to the right and start filling
+    // to do that we insert one more col to the left and start filling
     for row in plan.iter_mut() {
-        row.push('.');
+        row.insert(0, '.');
         // row.push('.');
     }
     eprintln!("Expanded field (+ 1 col):");
@@ -130,24 +130,37 @@ pub fn part1(input_path: &Path) {
     let mut target_plan = vec![vec!['.'; plan[0].len() - 1]; plan.len()];
     for (row_idx, row) in plan.iter().enumerate() {
         let mut inside = false;
-        for j in 0..(row.len() - 1) {
-            let window = &row[j..j + 2];
+        let mut on_hor_line = false;
+        for j in 1..row.len() {
+            let window = &row[j - 1..j + 1];
             match window {
-                ['#', '.'] => {
+                ['.', '#'] => {
                     inside = !inside;
-                    target_plan[row_idx][j] = '#';
+                    // on_hor_line = true;
+                    target_plan[row_idx][j - 1] = window[1];
                 }
                 ['#', '#'] => {
-                    // if !inside {
-                    //     inside = !inside
-                    // }
-                    target_plan[row_idx][j] = '#';
+                    // mark if we are on horizontal line
+                    on_hor_line = true;
+                    target_plan[row_idx][j - 1] = window[1];
+                }
+                ['#', '.'] => {
+                    if on_hor_line {
+                        // if we are finishing horizontal line - then we should switch 'inside' flag as well
+                        on_hor_line = false;
+                        inside = false;
+                    }
+                    if inside {
+                        target_plan[row_idx][j - 1] = '#'
+                    } else {
+                        target_plan[row_idx][j - 1] = window[1]
+                    }
                 }
                 _ => {
                     if inside {
-                        target_plan[row_idx][j] = '#'
+                        target_plan[row_idx][j - 1] = '#'
                     } else {
-                        target_plan[row_idx][j] = window[0]
+                        target_plan[row_idx][j - 1] = window[1]
                     }
                 }
             }
