@@ -1,3 +1,4 @@
+use std::collections::VecDeque;
 use std::fs::File;
 use std::io::{self, BufRead};
 use std::path::Path;
@@ -94,7 +95,7 @@ pub fn part1(input_path: &Path) {
                 //     col_idx,
                 //     plan[row_idx].len()
                 // );
-                let needed_rows = plan.len();
+                // let needed_rows = plan.len();
                 let needed_cols = step.meters as i16 - (plan[row_idx].len() - col_idx - 1) as i16;
                 if needed_cols > 0 {
                     for _ in 0..needed_cols {
@@ -114,11 +115,12 @@ pub fn part1(input_path: &Path) {
     }
     // now second part: fill field
     // to do that we insert one more col to the left and start filling
-    for row in plan.iter_mut() {
-        row.insert(0, '.');
-        // row.push('.');
-    }
-    eprintln!("Expanded field (+ 1 col):");
+    // for row in plan.iter_mut() {
+    //     // row.insert(0, '.');
+    //     row.push('.');
+    // }
+    // plan.insert(0, vec!['.'; plan[0].len()]);
+    eprintln!("Result field");
     for (i, row) in plan.iter().enumerate() {
         print!("{:04}  ", i);
         for c in row {
@@ -126,35 +128,119 @@ pub fn part1(input_path: &Path) {
         }
         println!();
     }
+    // now let's find first 'inner' position and try to fill from it
+    let start_point = find_inner_point(&plan);
+    let mut next_points = VecDeque::from([start_point]);
+    eprintln!("Found inside point: {:?}", start_point);
+    while !next_points.is_empty() {
+        let (i, j) = next_points.pop_front().unwrap();
+        plan[i][j] = '#';
+        // now let's try going in 4 directions
+        let directions = [(-1i32, 0i32), (0, 1), (1, 0), (0, -1)];
+        for (di, dj) in directions {
+            let new_i = (i as i32 + di) as usize;
+            let new_j = (j as i32 + dj) as usize;
+            if plan[new_i][new_j] == '.' {
+                plan[new_i][new_j] = '#';
+                next_points.push_back((new_i, new_j));
+            }
+        }
+    }
+    eprintln!("Filled plan:");
+    for (i, row) in plan.iter().enumerate() {
+        print!("{:04}  ", i);
+        for c in row {
+            print!("{}", c);
+        }
+        println!();
+    }
+    let result: usize = plan
+        .iter()
+        .map(|row| row.iter().filter(|c| **c == '#').count())
+        .sum();
+    println!("Result: {}", result);
+}
+
+// Find first point inside given plan
+fn find_inner_point(plan: &Vec<Vec<char>>) -> (usize, usize) {
+    // to do that we find first elements with following pattern. The coordinates of x are the ones we looking for.
+    // 11
+    // 1x
+    for i in 0..plan.len() - 1 {
+        for j in 0..plan[i].len() - 1 {
+            let window = [
+                plan[i][j],
+                plan[i][j + 1],
+                plan[i + 1][j],
+                plan[i + 1][j + 1],
+            ];
+            if window == ['#', '#', '#', '.'] {
+                return (i + 1, j + 1);
+            }
+        }
+    }
+    panic!("The plan has no inside points");
+}
+
+#[allow(dead_code)]
+fn scan_fill(plan: &Vec<Vec<char>>) {
     // now we scan each row from left to right
-    let mut target_plan = vec![vec!['.'; plan[0].len() - 1]; plan.len()];
-    for (row_idx, row) in plan.iter().enumerate() {
+    // let's try scanning following symbols by mask of 1s:
+    // 11
+    // 11
+    // that will give us possibility to distinguish top or bottom horizontal line
+    // now when we are on top or bottom horizontal line, we are not 'inside'
+    // some examples of matched patterns
+    // 10     00
+    // 11 ... 10 - means that we went from L to 7 so we are inside
+    //
+    // 10     10
+    // 11 ... 10 - means that we went from L to J so we are not inside
+    //
+    // 00     01
+    // 01 ... 11
+    let mut target_plan = vec![vec!['.'; plan[0].len()]; plan.len()];
+    // we scan row by row starting with second one
+    for row_idx in 1..plan.len() {
         let mut inside = false;
         let mut on_hor_line = false;
+        let row = &plan[row_idx];
         for j in 1..row.len() {
-            let window = &row[j - 1..j + 1];
+            let window = [
+                plan[row_idx - 1][j - 1],
+                plan[row_idx - 1][j],
+                plan[row_idx][j - 1],
+                plan[row_idx][j],
+            ];
             match window {
-                ['.', '#'] => {
+                ['#', '#', '.', _] => {
+                    // we've crossed the line
                     inside = !inside;
-                    // on_hor_line = true;
                     target_plan[row_idx][j - 1] = window[1];
                 }
-                ['#', '#'] => {
-                    // mark if we are on horizontal line
+                [_, '#', '#', _] => {
+                    // either top or bottom horizontal line
                     on_hor_line = true;
                     target_plan[row_idx][j - 1] = window[1];
                 }
-                ['#', '.'] => {
+                ['.', '#', '.', _] => {
                     if on_hor_line {
-                        // if we are finishing horizontal line - then we should switch 'inside' flag as well
-                        on_hor_line = false;
-                        inside = false;
-                    }
-                    if inside {
-                        target_plan[row_idx][j - 1] = '#'
+                        on_hor_line = false
                     } else {
-                        target_plan[row_idx][j - 1] = window[1]
+                        inside = !inside;
                     }
+                    target_plan[row_idx][j - 1] = window[1];
+                    //     //
+                    //     if on_hor_line {
+                    //         // if we are finishing horizontal line - then we should switch 'inside' flag as well
+                    //         on_hor_line = false;
+                    //         inside = false;
+                    //     }
+                    //     if inside {
+                    //         target_plan[row_idx][j - 1] = '#'
+                    //     } else {
+                    //         target_plan[row_idx][j - 1] = window[1]
+                    //     }
                 }
                 _ => {
                     if inside {
