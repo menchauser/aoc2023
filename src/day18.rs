@@ -265,7 +265,7 @@ fn draw_plan_sparse(instructions: &Vec<DigStep>) -> Vec<Vec<(usize, char)>> {
                     max_width += needed_cols as usize;
                 }
                 // insert '#' chars
-                for j in (col_idx - step.meters)..col_idx {
+                for j in (col_idx - step.meters + 1)..col_idx {
                     plan[row_idx].push((j, '#'));
                 }
                 // col should move to the left
@@ -313,9 +313,9 @@ fn print_plan_sparse(sparse_plan: &Vec<Vec<(usize, char)>>) {
             print!("{}", c);
             cur_col = col + 1;
         }
-        if cur_col < *max_width {
-            print!("{}", ".".repeat(max_width - cur_col));
-        }
+        // if cur_col < *max_width {
+        //     print!("{}", ".".repeat(max_width - cur_col));
+        // }
         println!();
     }
 }
