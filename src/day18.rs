@@ -308,12 +308,13 @@ fn draw_plan_sparse(instructions: &Vec<DigStep>) -> Vec<Vec<(usize, char)>> {
     plan
 }
 
+#[allow(dead_code)]
 fn print_plan_sparse(sparse_plan: &Vec<Vec<(usize, char)>>) {
-    let max_width = sparse_plan
-        .iter()
-        .map(|row| row.last().map(|(col, _)| col).unwrap())
-        .max()
-        .unwrap();
+    // let max_width = sparse_plan
+    //     .iter()
+    //     .map(|row| row.last().map(|(col, _)| col).unwrap())
+    //     .max()
+    //     .unwrap();
     for row in sparse_plan {
         let mut cur_col = 0;
         for (col, c) in row {
