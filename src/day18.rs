@@ -4,8 +4,6 @@ use std::fs::File;
 use std::io::{self, BufRead};
 use std::path::Path;
 
-use num::iter;
-
 pub fn part1(input_path: &Path) {
     let dig_plan = load_input(input_path, parse_instruction_1).unwrap();
     let mut plan = draw_plan(&dig_plan);
@@ -52,7 +50,7 @@ pub fn part1(input_path: &Path) {
 }
 
 pub fn part2(input_path: &Path) {
-    let dig_plan = load_input(input_path, parse_instruction_1).unwrap();
+    let dig_plan = load_input(input_path, parse_instruction_2).unwrap();
     eprintln!("Plan:");
     for ds in &dig_plan {
         eprintln!("{}", ds);
@@ -61,10 +59,16 @@ pub fn part2(input_path: &Path) {
     let result: usize = dig_plan.iter().map(|ds| ds.meters).sum();
     eprintln!("{} pixels map to {} bytes", result, result * 24);
     let plan = draw_plan_sparse(&dig_plan);
-    for row in &plan {
-        println!("{:?}", row)
-    }
-    print_plan_sparse(&plan);
+    let total_elems: usize = plan.iter().map(|row| row.len()).sum();
+    eprintln!(
+        "Total loaded size: {} pixels, ~{} bytes",
+        total_elems,
+        total_elems * 16
+    );
+    // for row in &plan {
+    //     println!("{:?}", row)
+    // }
+    // print_plan_sparse(&plan);
 
     // let mut plan = draw_plan(&dig_plan);
     // eprintln!("Result field");
@@ -146,7 +150,7 @@ fn draw_plan(instructions: &Vec<DigStep>) -> Vec<Vec<char>> {
                     plan.reserve(needed_rows as usize);
                     eprintln!("D: Reserved. Adding row values...");
                     let new_row = vec!['.'; needed_cols];
-                    for i in 0..needed_rows {
+                    for _ in 0..needed_rows {
                         plan.push(new_row.clone());
                     }
                     eprintln!("D: Added");
