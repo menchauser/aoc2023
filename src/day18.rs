@@ -265,7 +265,7 @@ fn draw_plan_sparse(instructions: &Vec<DigStep>) -> Vec<Vec<(usize, char)>> {
                     max_width += needed_cols as usize;
                 }
                 // insert '#' chars
-                for j in (col_idx - step.meters + 1)..col_idx {
+                for j in (col_idx - step.meters)..col_idx {
                     plan[row_idx].push((j, '#'));
                 }
                 // col should move to the left
@@ -291,9 +291,15 @@ fn draw_plan_sparse(instructions: &Vec<DigStep>) -> Vec<Vec<(usize, char)>> {
             }
         }
     }
-    // now let's sort each row by col position
+    // now let's sort each row by col position and remove duplicates
     for row in plan.iter_mut() {
         row.sort_by_key(|(col, _)| *col);
+        // go from end to start
+        for j in (1..row.len()).rev() {
+            if row[j - 1] == row[j] {
+                row.remove(j);
+            }
+        }
     }
     plan
 }
